@@ -10,6 +10,7 @@
 #include "IDIServiceTyped.hpp"
 #include "DISingletonService.hpp"
 #include "DITransientService.hpp"
+#include "DISharedService.hpp"
 #include "DIUtils.hpp"
 
 namespace sol::di
@@ -53,6 +54,12 @@ namespace sol::di
         void RegisterTransientService(const Factory<T> factory)
         {
             RegisterServiceInternal<T, services::DITransientService<T, isThreadsafe>>(factory);
+        }
+
+        template<class T>
+        void RegisterSharedService(const Factory<T> factory)
+        {
+            RegisterServiceInternal<T, services::DISharedService<T, isThreadsafe>>(factory);
         }
 
         template<class T>
