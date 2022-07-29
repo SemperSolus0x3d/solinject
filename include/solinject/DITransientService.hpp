@@ -1,24 +1,25 @@
-#include <memory>
-#include <functional>
-#include "DIContainer.hpp"
-
-namespace sol::di { class DIContainer; }
+#pragma once
+#include "DIServiceBase.hpp"
 
 namespace sol::di::services
 {
-    template<class T>
-    class DITransientService : public IDIServiceTyped<T>
+    template<class T, bool isThreadsafe>
+    class DITransientService : public DIServiceBase<T, isThreadsafe>
     {
     public:
-        using ServicePtr = IDIServiceTyped<T>::ServicePtr;
-        using Factory = IDIServiceTyped<T>::Factory;
+        using Base = DIServiceBase<T, isThreadsafe>;
+        using Container = Base::Container;
+        using ServicePtr = Base::ServicePtr;
+        using Factory = Base::Factory;
 
-        DITransientService(Factory factory) : m_Factory(factory)
+        DITransientService(const Factory factory) : m_Factory(factory)
         {
         }
 
-        ServicePtr GetService(sol::di::DIContainer& container) override
+        ServicePtr GetService(const Container& container) override
         {
+            auto lock = this->LockMutex();
+
             return m_Factory(container);
         }
 

@@ -4,6 +4,12 @@ project(solinject-tests VERSION 1.0 LANGUAGES CXX)
 
 macro(add_test_executable name source_file)
     add_executable("${name}" "${source_file}")
+    target_include_directories(
+        "${name}"
+        PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/integration"
+    )
     target_link_libraries("${name}" solinject)
     add_test(NAME "${name}" COMMAND "${name}")
 endmacro()
