@@ -1,7 +1,7 @@
 .vscode
 
-build
-install
+build*
+install*
 
 # CMake files
 CMakeLists.txt.user
