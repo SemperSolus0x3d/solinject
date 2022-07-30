@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #define FROM_DI(class_) (c.GetRequiredServicePtr<class_>())
 
