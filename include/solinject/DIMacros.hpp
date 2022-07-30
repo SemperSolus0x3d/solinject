@@ -29,3 +29,17 @@
         { \
             return std::make_unique<implementation>(__VA_ARGS__); \
         })
+
+#define RegisterSharedService(container, class_, ...) \
+    (container).RegisterSharedService<class_>( \
+        [](const auto& c) \
+        { \
+            return std::make_unique<class_>(__VA_ARGS__); \
+        })
+
+#define RegisterSharedInterface(container, interface_, implementation, ...) \
+    (container).RegisterSharedService<interface_>( \
+        [](const auto& c) \
+        { \
+            return std::make_unique<implementation>(__VA_ARGS__); \
+        })

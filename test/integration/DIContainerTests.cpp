@@ -86,6 +86,32 @@ void ItReturnsDifferentTransientInstances()
     assert(instance1->Id() != instance2->Id());
 }
 
+template <bool isThreadsafe>
+void ItReturnsSameSharedInstanceWhileItIsAlive()
+{
+    using namespace test;
+
+    SameInstanceTestClass::ResetIds();
+
+    DIContainer<isThreadsafe> container;
+
+    RegisterSharedService(container, SameInstanceTestClass);
+
+    int firstInstanceId;
+
+    {
+        auto instance1 = container.GetRequiredServicePtr<SameInstanceTestClass>();
+        auto instance2 = container.GetRequiredServicePtr<SameInstanceTestClass>();
+
+        assert(instance1->Id() == instance2->Id());
+
+        firstInstanceId = instance1->Id();
+    }
+
+    auto instance3 = container.GetRequiredServicePtr<SameInstanceTestClass>();
+    assert(instance3->Id() != firstInstanceId);
+}
+
 void ItHandlesMultithreadedAccessCorrectly()
 {
     using namespace sol::di::test;
@@ -100,18 +126,24 @@ void ItHandlesMultithreadedAccessCorrectly()
             {
                 RegisterSingletonService(container, TestA);
                 RegisterTransientService(container, TestB, FROM_DI(TestA));
-                RegisterSingletonService(container, TestC, FROM_DI(TestA), FROM_DI(TestB));
-                RegisterTransientInterface(container, ITestD, TestD, FROM_DI(TestC));
+                RegisterSharedService(container, TestC, FROM_DI(TestA), FROM_DI(TestB));
+                RegisterSingletonInterface(container, ITestD, TestD, FROM_DI(TestC));
+                RegisterTransientService(container, TestE, FROM_DI(ITestD));
+                RegisterSharedService(container, TestF, FROM_DI(TestE));
 
                 auto d = container.GetRequiredServicePtr<ITestD>();
                 auto a = container.GetRequiredServicePtr<TestA>();
+                auto e = container.GetRequiredServicePtr<TestE>();
                 auto c = container.GetRequiredServicePtr<TestC>();
                 auto b = container.GetRequiredServicePtr<TestB>();
+                auto f = container.GetRequiredServicePtr<TestF>();
 
                 assert(a != nullptr);
                 assert(b != nullptr);
                 assert(c != nullptr);
                 assert(d != nullptr);
+                assert(e != nullptr);
+                assert(f != nullptr);
             }
         }));
 
@@ -126,6 +158,7 @@ void RunTests()
     ItRegistersAndReturnsServices<isThreadsafe>();
     ItReturnsSameSingletonInstance<isThreadsafe>();
     ItReturnsDifferentTransientInstances<isThreadsafe>();
+    ItReturnsSameSharedInstanceWhileItIsAlive<isThreadsafe>();
 
     if constexpr (isThreadsafe)
     {

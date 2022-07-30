@@ -29,6 +29,18 @@ namespace sol::di::test
         TestD(std::shared_ptr<TestC> c) {}
     };
 
+    class TestE
+    {
+    public:
+        TestE(std::shared_ptr<ITestD> d) {}
+    };
+
+    class TestF
+    {
+    public:
+        TestF(std::shared_ptr<TestE> e) {}
+    };
+
     class SameInstanceTestClass
     {
     public:
