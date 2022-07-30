@@ -18,8 +18,6 @@ namespace sol::di::services
 
         ServicePtr GetService(const Container& container) override
         {
-            auto lock = this->LockMutex();
-
             return m_Factory(container);
         }
 

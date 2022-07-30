@@ -23,12 +23,7 @@ namespace sol::di::services
         ServicePtr GetService(const Container& container) override
         {
             if (m_ServicePtr == nullptr)
-            {
-                auto lock = this->LockMutex();
-
-                if (m_ServicePtr == nullptr)
-                    m_ServicePtr = m_Factory(container);
-            }
+                m_ServicePtr = m_Factory(container);
 
             return m_ServicePtr;
         }

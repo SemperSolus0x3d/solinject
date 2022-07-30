@@ -14,14 +14,5 @@ namespace sol::di::services
         using Factory = Base::Factory;
 
         virtual ~DIServiceBase() {}
-    protected:
-        using Mutex = std::mutex;
-
-        utils::DiscardableMutex<Mutex, isThreadsafe> m_Mutex;
-
-        utils::DiscardableLock<Mutex, isThreadsafe> LockMutex()
-        {
-            return utils::DiscardableLock<Mutex, isThreadsafe>(m_Mutex);
-        }
     };
 }
