@@ -11,7 +11,7 @@ macro(add_test_executable name source_file)
         "${CMAKE_CURRENT_SOURCE_DIR}/integration"
     )
     target_link_libraries("${name}" solinject)
-    add_test(NAME "${name}" COMMAND "${name}")
+    add_test(NAME "${name}" COMMAND "$<TARGET_FILE:${name}>")
 endmacro()
 
 macro(add_integration_test_executable name)

@@ -1,51 +1,52 @@
 cmake_minimum_required(VERSION 3.24)
 
-project(solinject VERSION 1.0 LANGUAGES CXX)
+project(solinject VERSION 1.0.0 LANGUAGES CXX)
 
-get_directory_property(IS_SUBPROJECT PARENT_DIRECTORY)
+set(PROJECT_NAMESPACE sol::)
 
-option(ENABLE_TESTS "Enable tests" ON)
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+include(CTest)
 
-add_library(${CMAKE_PROJECT_NAME} INTERFACE)
+add_library(${PROJECT_NAME} INTERFACE)
+add_library("${PROJECT_NAMESPACE}${PROJECT_NAME}" ALIAS ${PROJECT_NAME})
 
-target_compile_features(${CMAKE_PROJECT_NAME} INTERFACE cxx_std_20)
+target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_17)
 
 target_include_directories(
-    ${CMAKE_PROJECT_NAME} INTERFACE
+    ${PROJECT_NAME} INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
 )
 
-if(ENABLE_TESTS AND NOT IS_SUBPROJECT)
+if(BUILD_TESTING AND PROJECT_IS_TOP_LEVEL)
     enable_testing()
     add_subdirectory(test)
 endif()
-
-include(GNUInstallDirs)
-include(CMakePackageConfigHelpers)
-
-install(
-    TARGETS ${CMAKE_PROJECT_NAME}
-    EXPORT ${CMAKE_PROJECT_NAME}
-)
-
-install(
-    DIRECTORY include/ 
-    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${CMAKE_PROJECT_NAME}"
-)
-
-# Export project and install config
-install(
-    EXPORT ${CMAKE_PROJECT_NAME}
-    FILE "${PROJECT_NAME}Config.cmake"
-    NAMESPACE sol::
-    DESTINATION cmake
-)
 
 # Create package version file
 write_basic_package_version_file(
     "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
     COMPATIBILITY SameMajorVersion
+)
+
+install(
+    TARGETS ${PROJECT_NAME}
+    EXPORT ${PROJECT_NAME}
+)
+
+# Export project and install config
+install(
+    EXPORT ${PROJECT_NAME}
+    FILE "${PROJECT_NAME}_Config.cmake"
+    NAMESPACE ${PROJECT_NAMESPACE}
+    DESTINATION cmake
+)
+
+# Install includes
+install(
+    DIRECTORY include/
+    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}"
 )
 
 # Install package version file
