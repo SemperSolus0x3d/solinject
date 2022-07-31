@@ -6,13 +6,16 @@
 namespace sol::di::services
 {
     template <class T, bool isThreadsafe>
-    class DIServiceBase abstract : public IDIServiceTyped<T, isThreadsafe>
+    class DIServiceBase : public IDIServiceTyped<T, isThreadsafe>
     {
     public:
         using Base = IDIServiceTyped<T, isThreadsafe>;
-        using ServicePtr = Base::ServicePtr;
-        using Factory = Base::Factory;
+        using ServicePtr = typename Base::ServicePtr;
+        using Factory = typename Base::Factory;
 
-        virtual ~DIServiceBase() {}
+        virtual ~DIServiceBase() = 0;
     };
+
+    template <class T, bool isThreadsafe>
+    DIServiceBase<T, isThreadsafe>::~DIServiceBase() {}
 }

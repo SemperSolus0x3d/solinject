@@ -8,9 +8,9 @@ namespace sol::di::services
     {
     public:
         using Base = DIServiceBase<T, isThreadsafe>;
-        using Container = Base::Container;
-        using ServicePtr = Base::ServicePtr;
-        using Factory = Base::Factory;
+        using Container = typename Base::Container;
+        using ServicePtr = typename Base::ServicePtr;
+        using Factory = typename Base::Factory;
 
         DITransientService(const Factory factory) : m_Factory(factory)
         {

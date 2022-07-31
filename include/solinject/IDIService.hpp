@@ -2,9 +2,11 @@
 
 namespace sol::di::services
 {
-    class IDIService abstract
+    class IDIService
     {
     public:
-        virtual ~IDIService() = 0 {}
+        virtual ~IDIService() = 0;
     };
+
+    IDIService::~IDIService() {}
 }
