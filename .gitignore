@@ -3,6 +3,8 @@
 build*
 install*
 
+!scripts/**
+
 # CMake files
 CMakeLists.txt.user
 CMakeCache.txt
