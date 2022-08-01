@@ -15,7 +15,10 @@
 
 namespace sol::di
 {
-    class services::IDIService;
+    namespace services
+    {
+        class IDIService;
+    }
 
     template <bool isThreadsafe = true>
     class DIContainer

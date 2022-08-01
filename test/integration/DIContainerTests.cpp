@@ -41,10 +41,10 @@ void ItRegistersAndReturnsServices()
     RegisterSingletonService(container, TestC, FROM_DI(TestA), FROM_DI(TestB));
     RegisterTransientInterface(container, ITestD, TestD, FROM_DI(TestC));
 
-    auto d = container.GetRequiredServicePtr<ITestD>();
-    auto a = container.GetRequiredServicePtr<TestA>();
-    auto c = container.GetRequiredServicePtr<TestC>();
-    auto b = container.GetRequiredServicePtr<TestB>();
+    auto d = container.template GetRequiredServicePtr<ITestD>();
+    auto a = container.template GetRequiredServicePtr<TestA>();
+    auto c = container.template GetRequiredServicePtr<TestC>();
+    auto b = container.template GetRequiredServicePtr<TestB>();
 
     assert(a != nullptr);
     assert(b != nullptr);
@@ -63,8 +63,8 @@ void ItReturnsSameSingletonInstance()
 
     RegisterSingletonService(container, SameInstanceTestClass);
 
-    auto instance1 = container.GetRequiredServicePtr<SameInstanceTestClass>();
-    auto instance2 = container.GetRequiredServicePtr<SameInstanceTestClass>();
+    auto instance1 = container.template GetRequiredServicePtr<SameInstanceTestClass>();
+    auto instance2 = container.template GetRequiredServicePtr<SameInstanceTestClass>();
 
     assert(instance1->Id() == instance2->Id());
 }
@@ -80,8 +80,8 @@ void ItReturnsDifferentTransientInstances()
 
     RegisterTransientService(container, SameInstanceTestClass);
 
-    auto instance1 = container.GetRequiredServicePtr<SameInstanceTestClass>();
-    auto instance2 = container.GetRequiredServicePtr<SameInstanceTestClass>();
+    auto instance1 = container.template GetRequiredServicePtr<SameInstanceTestClass>();
+    auto instance2 = container.template GetRequiredServicePtr<SameInstanceTestClass>();
 
     assert(instance1->Id() != instance2->Id());
 }
@@ -100,15 +100,15 @@ void ItReturnsSameSharedInstanceWhileItIsAlive()
     int firstInstanceId;
 
     {
-        auto instance1 = container.GetRequiredServicePtr<SameInstanceTestClass>();
-        auto instance2 = container.GetRequiredServicePtr<SameInstanceTestClass>();
+        auto instance1 = container.template GetRequiredServicePtr<SameInstanceTestClass>();
+        auto instance2 = container.template GetRequiredServicePtr<SameInstanceTestClass>();
 
         assert(instance1->Id() == instance2->Id());
 
         firstInstanceId = instance1->Id();
     }
 
-    auto instance3 = container.GetRequiredServicePtr<SameInstanceTestClass>();
+    auto instance3 = container.template GetRequiredServicePtr<SameInstanceTestClass>();
     assert(instance3->Id() != firstInstanceId);
 }
 
@@ -131,12 +131,12 @@ void ItHandlesMultithreadedAccessCorrectly()
                 RegisterTransientService(container, TestE, FROM_DI(ITestD));
                 RegisterSharedService(container, TestF, FROM_DI(TestE));
 
-                auto d = container.GetRequiredServicePtr<ITestD>();
-                auto a = container.GetRequiredServicePtr<TestA>();
-                auto e = container.GetRequiredServicePtr<TestE>();
-                auto c = container.GetRequiredServicePtr<TestC>();
-                auto b = container.GetRequiredServicePtr<TestB>();
-                auto f = container.GetRequiredServicePtr<TestF>();
+                auto d = container.template GetRequiredServicePtr<ITestD>();
+                auto a = container.template GetRequiredServicePtr<TestA>();
+                auto e = container.template GetRequiredServicePtr<TestE>();
+                auto c = container.template GetRequiredServicePtr<TestC>();
+                auto b = container.template GetRequiredServicePtr<TestB>();
+                auto f = container.template GetRequiredServicePtr<TestF>();
 
                 assert(a != nullptr);
                 assert(b != nullptr);
