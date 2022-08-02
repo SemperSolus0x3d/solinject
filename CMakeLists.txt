@@ -24,33 +24,35 @@ if(BUILD_TESTING AND PROJECT_IS_TOP_LEVEL)
     add_subdirectory(test)
 endif()
 
-# Create package version file
-write_basic_package_version_file(
-    "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
-    COMPATIBILITY SameMajorVersion
-)
+if (PROJECT_IS_TOP_LEVEL)
+    # Create package version file
+    write_basic_package_version_file(
+        "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+        COMPATIBILITY SameMajorVersion
+    )
 
-install(
-    TARGETS ${PROJECT_NAME}
-    EXPORT ${PROJECT_NAME}
-)
+    install(
+        TARGETS ${PROJECT_NAME}
+        EXPORT ${PROJECT_NAME}
+    )
 
-# Export project and install config
-install(
-    EXPORT ${PROJECT_NAME}
-    FILE "${PROJECT_NAME}_Config.cmake"
-    NAMESPACE ${PROJECT_NAMESPACE}
-    DESTINATION cmake
-)
+    # Export project and install config
+    install(
+        EXPORT ${PROJECT_NAME}
+        FILE "${PROJECT_NAME}Config.cmake"
+        NAMESPACE ${PROJECT_NAMESPACE}
+        DESTINATION cmake
+    )
 
-# Install includes
-install(
-    DIRECTORY include/
-    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}"
-)
+    # Install includes
+    install(
+        DIRECTORY include/
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}"
+    )
 
-# Install package version file
-install(
-    FILES "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake" 
-    DESTINATION cmake
-)
+    # Install package version file
+    install(
+        FILES "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake" 
+        DESTINATION cmake
+    )
+endif()
