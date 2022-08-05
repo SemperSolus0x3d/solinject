@@ -1,0 +1,44 @@
+name: Build and Run Tests
+
+on:
+  push:
+    branches: [ $default_branch ]
+  pull_request:
+    branches: [ $default_branch ]
+  workflow_dispatch:
+
+env:
+  BUILD_TYPE: Debug
+
+jobs:
+  build_on_windows:
+    runs_on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Configure
+      run: cmake -B ${{github.workspace}}/build -S ${{github.workspace}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+
+    - name: Build
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+    - name: Test
+      working-directory: ${{github.workspace}}/build
+      run: ctest -C ${{env.BUILD_TYPE}}
+
+  build_on_linux:
+    runs_on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Configure
+      run: cmake -B ${{github.workspace}}/build -S ${{github.workspace}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+
+    - name: Build
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+    - name: Test
+      working-directory: ${{github.workspace}}/build
+      run: ctest -C ${{env.BUILD_TYPE}}
