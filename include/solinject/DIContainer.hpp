@@ -21,16 +21,18 @@
 #pragma once
 
 #include <map>
+#include <vector>
+#include <algorithm>
 #include <memory>
 #include <typeinfo>
 #include <typeindex>
 #include <mutex>
 
-#include "IDIService.hpp"
-#include "IDIServiceTyped.hpp"
-#include "DISingletonService.hpp"
-#include "DITransientService.hpp"
-#include "DISharedService.hpp"
+#include "services/IDIService.hpp"
+#include "services/IDIServiceTyped.hpp"
+#include "services/DISingletonService.hpp"
+#include "services/DITransientService.hpp"
+#include "services/DISharedService.hpp"
 #include "DIUtils.hpp"
 
 namespace sol::di
@@ -86,35 +88,19 @@ namespace sol::di
         }
 
         template<class T>
-        ServicePtr<T> GetRequiredServicePtr() const
+        ServicePtr<T> GetRequiredService() const
         {
-            return GetServicePtrInternal<T, false>();
+            return GetServiceInternal<T, false>();
         }
 
         template <class T>
-        ServicePtr<T> GetServicePtr() const
+        ServicePtr<T> GetService() const
         {
-            return GetServicePtrInternal<T, true>();
+            return GetServiceInternal<T, true>();
         }
 
-    private:
-        using DIServicePtr = std::unique_ptr<services::IDIService>;
-        using Mutex = std::recursive_mutex;
-
-        std::map<std::type_index, DIServicePtr> m_Services;
-
-        mutable utils::DiscardableMutex<Mutex, isThreadsafe> m_Mutex;
-
-        template <class TService, class TDIService>
-        void RegisterServiceInternal(Factory<TService> factory)
-        {
-            auto lock = LockMutex();
-
-            m_Services[std::type_index(typeid(TService))] = std::make_unique<TDIService>(factory);
-        }
-
-        template <class T, bool nothrow>
-        ServicePtr<T> GetServicePtrInternal() const
+        template <class T>
+        std::vector<ServicePtr<T>> GetServices() const
         {
             using namespace std::string_literals;
 
@@ -123,15 +109,66 @@ namespace sol::di
             auto serviceIt = m_Services.find(std::type_index(typeid(T)));
 
             if (serviceIt == m_Services.end())
+                return std::vector<ServicePtr<T>>();
+
+            auto& services = serviceIt->second;
+
+            std::vector<ServicePtr<T>> result;
+            result.reserve(services.size());
+
+            std::transform(
+                services.begin(),
+                services.end(),
+                std::back_inserter(result),
+                [this](auto& diService)
+                {
+                    return GetServiceInstance<T>(diService);
+                }
+            );
+
+            return result;
+        }
+
+    private:
+        using DIServicePtr = std::unique_ptr<services::IDIService>;
+        using Mutex = std::recursive_mutex;
+
+        std::map<std::type_index, std::vector<DIServicePtr>> m_Services;
+
+        mutable utils::DiscardableMutex<Mutex, isThreadsafe> m_Mutex;
+
+        template <class T>
+        ServicePtr<T> GetServiceInstance(const DIServicePtr& diServicePtr) const
+        {
+            return static_cast<services::IDIServiceTyped<T, isThreadsafe>*>(diServicePtr.get())->GetService(*this);
+        }
+
+        template <class TService, class TDIService>
+        void RegisterServiceInternal(Factory<TService> factory)
+        {
+            auto lock = LockMutex();
+
+            m_Services[std::type_index(typeid(TService))].push_back(std::make_unique<TDIService>(factory));
+        }
+
+        template <class T, bool nothrow>
+        ServicePtr<T> GetServiceInternal() const
+        {
+            using namespace std::string_literals;
+
+            auto lock = LockMutex();
+
+            auto serviceIt = m_Services.find(std::type_index(typeid(T)));
+
+            if (serviceIt == m_Services.end() || serviceIt->second.empty())
                 if constexpr (nothrow)
                     return nullptr;
                 else
-                    throw std::out_of_range("Service not found. Service type: "s + typeid(T).name());
+                    throw std::out_of_range("Service is not registered. Service type: "s + typeid(T).name());
 
-            auto diService = serviceIt->second.get();
-            auto diServiceTyped = static_cast<services::IDIServiceTyped<T, isThreadsafe>*>(diService);
+            auto& services = serviceIt->second;
 
-            return diServiceTyped->GetService(*this);
+            return GetServiceInstance<T>(*services.rbegin());
         }
 
         utils::DiscardableLock<Mutex, isThreadsafe> LockMutex() const

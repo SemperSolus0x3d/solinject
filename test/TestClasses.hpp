@@ -61,10 +61,17 @@ namespace sol::di::test
         TestF(std::shared_ptr<TestE> e) {}
     };
 
+    class TestG
+    {
+    public:
+        TestG(std::vector<std::shared_ptr<TestF>> fs) {}
+    };
+
     class SameInstanceTestClass
     {
     public:
         SameInstanceTestClass() { m_Id = NextId++; }
+        SameInstanceTestClass(int id) : m_Id(id) { }
         int Id() { return m_Id; }
 
         static void ResetIds() { NextId = 0; }

@@ -10,6 +10,7 @@ C++17 Dependency Injection header-only library
 ## Features
 
 - Supports singleton[^singleton-service], transient[^transient-service] and shared[^shared_service] services.
+- Supports registering multiple services of the same type or multiple implementations of the same interface and resolving them all at once.
 - Threadsafe (can be disabled if your program is single-threaded).
 - Works on Windows and Linux. Other platforms support is untested.
 - You don't have to change your services in order to use them with solinject (except that they should accept and use their dependencies as [`std::shared_ptr<>`](https://en.cppreference.com/w/cpp/memory/shared_ptr)).
@@ -17,25 +18,16 @@ C++17 Dependency Injection header-only library
 - All configuration is tied to the container.
 - Container is mutable by default, but it will be immutable if you use it by a reference to const or by a pointer to const.
 
-## How to `#include` it
+## How to use it
 
-Depending on the way you link it to your project, you will have to `#include` it as
+### `#include` it
 
 ```c++
 #include <solinject.hpp>
 #include <solinject-macros.hpp>
 ```
 
-or
-
-```c++
-#include <solinject/solinject.hpp>
-#include <solinject/solinject-macros.hpp>
-```
-
-`solinject.hpp` contains the `sol::di::DIContainer` class, and `solinject-macros.hpp` provides you some handy macros for registering services.
-
-## How to use it
+`solinject.hpp` contains the `sol::di::DIContainer<>` class, and `solinject-macros.hpp` provides you some handy macros for registering services.
 
 ### Create a container
 
@@ -51,13 +43,15 @@ RegisterSingletonService(container, MyServiceClass/*, constructor params go here
 RegisterSingletonInterface(container, IMyServiceInterface, MyServiceClass/*, constructor params go here */);
 ```
 
-If your service has constructor parameters, that should be injected from the container, use the `FROM_DI()` macro:
+If your service has constructor parameters, that should be injected from the container, use the `FROM_DI()` macro or the `FROM_DI_MULTIPLE()` macro:
 
 ```c++
 RegisterSingletonService(container, MyServiceClass, FROM_DI(MyOtherServiceClass));
 // or
 RegisterSingletonInterface(container, IMyServiceInterface, MyServiceClass, FROM_DI(MyOtherServiceClass));
 ```
+
+The `FROM_DI()` macro injects a single instance of the service as `std::shared_ptr<T>`, while the `FROM_DI_MULTIPLE()` macro injects multiple instances of the service or multiple implementations of the interface as `std::vector<std::shared_ptr<T>>`.
 
 If for some reason you want to go the hard way, you can register the service directly using a lambda expression:
 
@@ -80,12 +74,18 @@ container.template RegisterSingletonService<IMyServiceInterface>([](const auto& 
 ### Get the service from the container
 
 ```c++
-std::shared_ptr<MyServiceClass> myService = container.template GetRequiredServicePtr<MyServiceClass>();
+// For a single instance:
+std::shared_ptr<MyServiceClass> myService = container.template GetRequiredService<MyServiceClass>();
 // or
-std::shared_ptr<IMyServiceInterface> myService = container.template GetRequiredServicePtr<IMyServiceInterface>();
+std::shared_ptr<IMyServiceInterface> myService = container.template GetRequiredService<IMyServiceInterface>();
+
+// For multiple instances or implementations:
+std::vector<std::shared_ptr<MyServiceClass>> myServices = container.template GetServices<MyServiceClass>();
+// or
+std::vector<std::shared_ptr<IMyServiceInterface>> myServices = container.template GetServices<IMyServiceInterface>();
 ```
 
-The `GetRequiredServicePtr<>()` method will throw [`std::out_of_range`](https://en.cppreference.com/w/cpp/error/out_of_range) if the requested service is not registered. If you prefer to get an empty [`std::shared_ptr<>`](https://en.cppreference.com/w/cpp/memory/shared_ptr) in such cases, use the `GetServicePtr<>()` method.
+The `GetRequiredService<>()` method will throw [`std::out_of_range`](https://en.cppreference.com/w/cpp/error/out_of_range) if the requested service is not registered. If you prefer to get an empty [`std::shared_ptr<>`](https://en.cppreference.com/w/cpp/memory/shared_ptr) in such cases, use the `GetService<>()` method.
 
 ## How to link it to your project
 

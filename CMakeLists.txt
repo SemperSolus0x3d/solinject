@@ -66,7 +66,7 @@ if (PROJECT_IS_TOP_LEVEL)
     # Install includes
     install(
         DIRECTORY include/
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}"
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
     )
 
     # Install package version file
