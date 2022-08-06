@@ -12,6 +12,7 @@ env:
 
 jobs:
   build_on_windows:
+    name: Build on Windows
     runs_on: windows-latest
 
     steps:
@@ -28,6 +29,7 @@ jobs:
       run: ctest -C ${{env.BUILD_TYPE}}
 
   build_on_linux:
+    name: Build on Linux
     runs_on: ubuntu-latest
 
     steps:
