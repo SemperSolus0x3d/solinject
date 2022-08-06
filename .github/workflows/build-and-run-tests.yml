@@ -11,9 +11,9 @@ env:
   BUILD_TYPE: Debug
 
 jobs:
-  build_on_windows:
+  build-on-windows:
     name: Build on Windows
-    runs_on: windows-latest
+    runs-on: windows-latest
 
     steps:
     - uses: actions/checkout@v3
@@ -28,9 +28,9 @@ jobs:
       working-directory: ${{github.workspace}}/build
       run: ctest -C ${{env.BUILD_TYPE}}
 
-  build_on_linux:
+  build-on-linux:
     name: Build on Linux
-    runs_on: ubuntu-latest
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v3

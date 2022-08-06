@@ -20,6 +20,10 @@ cmake_minimum_required(VERSION 3.21)
 
 project(solinject-tests VERSION 1.0 LANGUAGES CXX)
 
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+
+find_package(Threads REQUIRED)
+
 macro(add_test_executable name source_file)
     add_executable("${name}" "${source_file}")
     target_include_directories(
@@ -28,7 +32,7 @@ macro(add_test_executable name source_file)
         "${CMAKE_CURRENT_SOURCE_DIR}"
         "${CMAKE_CURRENT_SOURCE_DIR}/integration"
     )
-    target_link_libraries("${name}" solinject)
+    target_link_libraries("${name}" solinject Threads::Threads)
     add_test(NAME "${name}" COMMAND "$<TARGET_FILE:${name}>")
 endmacro()
 
