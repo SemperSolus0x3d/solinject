@@ -19,30 +19,18 @@
  */
 
 #pragma once
-#include "DIServiceBase.hpp"
+#include <typeinfo>
+#include "DIException.hpp"
 
-namespace sol::di::services
+namespace sol::di::exceptions
 {
-    template<class T, bool isThreadsafe>
-    class DITransientService : public DIServiceBase<T, isThreadsafe>
+    class CircularDependencyException : public DIException
     {
     public:
-        using Base = DIServiceBase<T, isThreadsafe>;
-        using Container = typename Base::Container;
-        using ServicePtr = typename Base::ServicePtr;
-        using Factory = typename Base::Factory;
-
-        DITransientService(const Factory factory) : m_Factory(factory)
+        CircularDependencyException(const std::type_info& type) : DIException(
+            std::string("Circular dependency detected. Type used twice: ") + type.name()
+        )
         {
         }
-
-    protected:
-        ServicePtr GetServiceInternal(const Container& container) override
-        {
-            return m_Factory(container);
-        }
-
-    private:
-        Factory m_Factory;
-    }; // class DITransientService
-} // sol::di::services
+    };
+}

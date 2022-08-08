@@ -22,6 +22,7 @@
 #include <mutex>
 #include "IDIServiceTyped.hpp"
 #include "solinject/DIUtils.hpp"
+#include "solinject/exceptions/CircularDependencyException.hpp"
 
 namespace sol::di::services
 {
@@ -32,8 +33,29 @@ namespace sol::di::services
         using Base = IDIServiceTyped<T, isThreadsafe>;
         using ServicePtr = typename Base::ServicePtr;
         using Factory = typename Base::Factory;
+        using Container = typename Base::Container;
 
         virtual ~DIServiceBase() = 0;
+
+        virtual ServicePtr GetService(const Container& container)
+        {
+            if (m_IsLocked)
+            {
+                m_IsLocked = false;
+                throw exceptions::CircularDependencyException(typeid(T));
+            }
+
+            m_IsLocked = true;
+            auto service = GetServiceInternal(container);
+            m_IsLocked = false;
+
+            return service;
+        }
+
+    protected:
+        bool m_IsLocked = false;
+
+        virtual ServicePtr GetServiceInternal(const Container& container) = 0;
     };
 
     template <class T, bool isThreadsafe>

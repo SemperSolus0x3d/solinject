@@ -33,6 +33,7 @@
 #include "services/DISingletonService.hpp"
 #include "services/DITransientService.hpp"
 #include "services/DISharedService.hpp"
+#include "exceptions/ServiceNotRegisteredException.hpp"
 #include "DIUtils.hpp"
 
 namespace sol::di
@@ -56,23 +57,42 @@ namespace sol::di
 
         DIContainer(const DIContainer& other) = delete;
 
-        DIContainer(DIContainer&& other) noexcept
+        DIContainer(DIContainer&& other) noexcept : DIContainer()
         {
-            m_Services = std::move(other.m_Services);
+            swap(*this, other);
         }
 
         DIContainer& operator=(const DIContainer& other) = delete;
 
         DIContainer& operator=(DIContainer&& other) noexcept
         {
-            m_Services = std::move(other.m_Services);
+            swap(*this, other);
             return *this;
+        }
+
+        friend void swap(DIContainer<isThreadsafe>& a, DIContainer<isThreadsafe>& b) noexcept
+        {
+            using namespace utils;
+            using std::swap;
+
+            if (&a == &b)
+                return;
+
+            DiscardableScopedLock<isThreadsafe, Mutex, Mutex> lock(a.m_Mutex, b.m_Mutex);
+
+            swap(a.m_Services, b.m_Services);
         }
 
         template<class T>
         void RegisterSingletonService(const Factory<T> factory)
         {
             RegisterServiceInternal<T, services::DISingletonService<T, isThreadsafe>>(factory);
+        }
+
+        template<class T>
+        void RegisterSingletonService(ServicePtr<T> instance)
+        {
+            RegisterServiceInternal<T, services::DISingletonService<T, isThreadsafe>>(instance);
         }
 
         template<class T>
@@ -151,6 +171,14 @@ namespace sol::di
             m_Services[std::type_index(typeid(TService))].push_back(std::make_unique<TDIService>(factory));
         }
 
+        template <class TService, class TDIService>
+        void RegisterServiceInternal(ServicePtr<TService> instance)
+        {
+            auto lock = LockMutex();
+
+            m_Services[std::type_index(typeid(TService))].push_back(std::make_unique<TDIService>(instance));
+        }
+
         template <class T, bool nothrow>
         ServicePtr<T> GetServiceInternal() const
         {
@@ -164,7 +192,7 @@ namespace sol::di
                 if constexpr (nothrow)
                     return nullptr;
                 else
-                    throw std::out_of_range("Service is not registered. Service type: "s + typeid(T).name());
+                    throw exceptions::ServiceNotRegisteredException(typeid(T));
 
             auto& services = serviceIt->second;
 

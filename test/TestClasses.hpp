@@ -81,4 +81,24 @@ namespace sol::di::test
     };
 
     int SameInstanceTestClass::NextId = 0;
-}
+
+    class CircularDependencyTestClassB;
+
+    class CircularDependencyTestClassA
+    {
+    public:
+        CircularDependencyTestClassA(std::shared_ptr<CircularDependencyTestClassB> b) {}
+    };
+
+    class CircularDependencyTestClassB
+    {
+    public:
+        CircularDependencyTestClassB(std::shared_ptr<CircularDependencyTestClassA> a) {}
+    };
+
+    class CircularDependencyTestClassC
+    {
+    public:
+        CircularDependencyTestClassC(std::shared_ptr<CircularDependencyTestClassC> c) {}
+    };
+} // sol::di::test
