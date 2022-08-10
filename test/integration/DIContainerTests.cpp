@@ -25,7 +25,7 @@
 #include <solinject.hpp>
 #include <solinject-macros.hpp>
 
-#include "TestClasses.h"
+#include "TestClasses.hpp"
 
 using namespace sol::di;
 
@@ -58,18 +58,27 @@ void ItRegistersAndReturnsServices()
 
     RegisterSingletonService(container, TestA);
     RegisterTransientService(container, TestB, FROM_DI(TestA));
-    RegisterSingletonService(container, TestC, FROM_DI(TestA), FROM_DI(TestB));
-    RegisterTransientInterface(container, ITestD, TestD, FROM_DI(TestC));
+    RegisterSharedService(container, TestC, FROM_DI(TestA), FROM_DI(TestB));
+    RegisterSingletonInterface(container, ITestD, TestD, FROM_DI(TestC));
+    RegisterTransientService(container, TestE, FROM_DI(ITestD));
+    RegisterSharedService(container, TestF, FROM_DI(TestE));
+    RegisterSingletonService(container, TestG, FROM_DI_MULTIPLE(TestF));
 
-    auto d = container.template GetRequiredServicePtr<ITestD>();
-    auto a = container.template GetRequiredServicePtr<TestA>();
-    auto c = container.template GetRequiredServicePtr<TestC>();
-    auto b = container.template GetRequiredServicePtr<TestB>();
+    auto d = container.template GetRequiredService<ITestD>();
+    auto a = container.template GetRequiredService<TestA>();
+    auto g = container.template GetRequiredService<TestG>();
+    auto e = container.template GetRequiredService<TestE>();
+    auto c = container.template GetRequiredService<TestC>();
+    auto b = container.template GetRequiredService<TestB>();
+    auto f = container.template GetRequiredService<TestF>();
 
     assert(a != nullptr);
     assert(b != nullptr);
     assert(c != nullptr);
     assert(d != nullptr);
+    assert(e != nullptr);
+    assert(f != nullptr);
+    assert(g != nullptr);
 }
 
 template <bool isThreadsafe>
@@ -83,8 +92,8 @@ void ItReturnsSameSingletonInstance()
 
     RegisterSingletonService(container, SameInstanceTestClass);
 
-    auto instance1 = container.template GetRequiredServicePtr<SameInstanceTestClass>();
-    auto instance2 = container.template GetRequiredServicePtr<SameInstanceTestClass>();
+    auto instance1 = container.template GetRequiredService<SameInstanceTestClass>();
+    auto instance2 = container.template GetRequiredService<SameInstanceTestClass>();
 
     assert(instance1->Id() == instance2->Id());
 }
@@ -100,8 +109,8 @@ void ItReturnsDifferentTransientInstances()
 
     RegisterTransientService(container, SameInstanceTestClass);
 
-    auto instance1 = container.template GetRequiredServicePtr<SameInstanceTestClass>();
-    auto instance2 = container.template GetRequiredServicePtr<SameInstanceTestClass>();
+    auto instance1 = container.template GetRequiredService<SameInstanceTestClass>();
+    auto instance2 = container.template GetRequiredService<SameInstanceTestClass>();
 
     assert(instance1->Id() != instance2->Id());
 }
@@ -120,16 +129,50 @@ void ItReturnsSameSharedInstanceWhileItIsAlive()
     int firstInstanceId;
 
     {
-        auto instance1 = container.template GetRequiredServicePtr<SameInstanceTestClass>();
-        auto instance2 = container.template GetRequiredServicePtr<SameInstanceTestClass>();
+        auto instance1 = container.template GetRequiredService<SameInstanceTestClass>();
+        auto instance2 = container.template GetRequiredService<SameInstanceTestClass>();
 
         assert(instance1->Id() == instance2->Id());
 
         firstInstanceId = instance1->Id();
     }
 
-    auto instance3 = container.template GetRequiredServicePtr<SameInstanceTestClass>();
+    auto instance3 = container.template GetRequiredService<SameInstanceTestClass>();
     assert(instance3->Id() != firstInstanceId);
+}
+
+template <bool isThreadsafe>
+void ItReturnsMultipleRegisteredServices()
+{
+    using namespace test;
+
+    DIContainer<isThreadsafe> container;
+
+    RegisterSingletonService(container, SameInstanceTestClass, 1);
+    RegisterSingletonService(container, SameInstanceTestClass, 2);
+    RegisterSingletonService(container, SameInstanceTestClass, 3);
+
+    auto instances = container.template GetServices<SameInstanceTestClass>();
+
+    assert(instances[0]->Id() == 1);
+    assert(instances[1]->Id() == 2);
+    assert(instances[2]->Id() == 3);
+}
+
+template <bool isThreadsafe>
+void ItReturnsLastRegisteredService()
+{
+    using namespace test;
+
+    DIContainer<isThreadsafe> container;
+
+    RegisterSingletonService(container, SameInstanceTestClass, 1);
+    RegisterSingletonService(container, SameInstanceTestClass, 2);
+    RegisterSingletonService(container, SameInstanceTestClass, 3);
+
+    auto service = container.template GetRequiredService<SameInstanceTestClass>();
+
+    assert(service->Id() == 3);
 }
 
 void ItHandlesMultithreadedAccessCorrectly()
@@ -140,9 +183,9 @@ void ItHandlesMultithreadedAccessCorrectly()
 
     std::vector<std::thread> threads;
 
-    for (int i = 0; i < 100; i++)
+    for (int i = 0; i < 50; i++)
         threads.push_back(std::thread([&]() {
-            for (int j = 0; j < 1000; j++)
+            for (int j = 0; j < 50; j++)
             {
                 RegisterSingletonService(container, TestA);
                 RegisterTransientService(container, TestB, FROM_DI(TestA));
@@ -150,13 +193,15 @@ void ItHandlesMultithreadedAccessCorrectly()
                 RegisterSingletonInterface(container, ITestD, TestD, FROM_DI(TestC));
                 RegisterTransientService(container, TestE, FROM_DI(ITestD));
                 RegisterSharedService(container, TestF, FROM_DI(TestE));
+                RegisterSingletonService(container, TestG, FROM_DI_MULTIPLE(TestF));
 
-                auto d = container.template GetRequiredServicePtr<ITestD>();
-                auto a = container.template GetRequiredServicePtr<TestA>();
-                auto e = container.template GetRequiredServicePtr<TestE>();
-                auto c = container.template GetRequiredServicePtr<TestC>();
-                auto b = container.template GetRequiredServicePtr<TestB>();
-                auto f = container.template GetRequiredServicePtr<TestF>();
+                auto d = container.template GetRequiredService<ITestD>();
+                auto a = container.template GetRequiredService<TestA>();
+                auto g = container.template GetRequiredService<TestG>();
+                auto e = container.template GetRequiredService<TestE>();
+                auto c = container.template GetRequiredService<TestC>();
+                auto b = container.template GetRequiredService<TestB>();
+                auto f = container.template GetRequiredService<TestF>();
 
                 assert(a != nullptr);
                 assert(b != nullptr);
@@ -164,6 +209,7 @@ void ItHandlesMultithreadedAccessCorrectly()
                 assert(d != nullptr);
                 assert(e != nullptr);
                 assert(f != nullptr);
+                assert(g != nullptr);
             }
         }));
 
@@ -179,6 +225,8 @@ void RunTests()
     ItReturnsSameSingletonInstance<isThreadsafe>();
     ItReturnsDifferentTransientInstances<isThreadsafe>();
     ItReturnsSameSharedInstanceWhileItIsAlive<isThreadsafe>();
+    ItReturnsMultipleRegisteredServices<isThreadsafe>();
+    ItReturnsLastRegisteredService<isThreadsafe>();
 
     if constexpr (isThreadsafe)
     {

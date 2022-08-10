@@ -21,7 +21,7 @@
 #pragma once
 #include <mutex>
 #include "IDIServiceTyped.hpp"
-#include "DIUtils.hpp"
+#include "solinject/DIUtils.hpp"
 
 namespace sol::di::services
 {
