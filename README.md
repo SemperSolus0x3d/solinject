@@ -12,6 +12,7 @@ C++17 Dependency Injection header-only library
 - Supports singleton[^singleton-service], transient[^transient-service] and shared[^shared_service] services.
 - Supports registering multiple services of the same type or multiple implementations of the same interface and resolving them all at once.
 - Threadsafe (can be disabled if your program is single-threaded).
+- Has runtime circular dependency checks.
 - Works on Windows and Linux. Other platforms support is untested.
 - You don't have to change your services in order to use them with solinject (except that they should accept and use their dependencies as [`std::shared_ptr<>`](https://en.cppreference.com/w/cpp/memory/shared_ptr)).
 - Your services don't have to know about their dependencies' lifetime.
@@ -53,6 +54,16 @@ RegisterSingletonInterface(container, IMyServiceInterface, MyServiceClass, FROM_
 
 The `FROM_DI()` macro injects a single instance of the service as `std::shared_ptr<T>`, while the `FROM_DI_MULTIPLE()` macro injects multiple instances of the service or multiple implementations of the interface as `std::vector<std::shared_ptr<T>>`.
 
+If you have a [`std::shared_ptr<>`](https://en.cppreference.com/w/cpp/memory/shared_ptr) or a [`std::unique_ptr<>`](https://en.cppreference.com/w/cpp/memory/unique_ptr) to an instance of the service, you can register it as a singleton:
+
+```c++
+auto instance1 = std::make_shared<MyServiceClass>();
+auto instance2 = std::make_unique<MyOtherServiceClass>();
+
+container.template RegisterSingletonService<MyServiceClass>(instance1);
+container.template RegisterSingletonService<MyOtherServiceClass>(std::move(instance2));
+```
+
 If for some reason you want to go the hard way, you can register the service directly using a lambda expression:
 
 ```c++
@@ -85,7 +96,7 @@ std::vector<std::shared_ptr<MyServiceClass>> myServices = container.template Get
 std::vector<std::shared_ptr<IMyServiceInterface>> myServices = container.template GetServices<IMyServiceInterface>();
 ```
 
-The `GetRequiredService<>()` method will throw [`std::out_of_range`](https://en.cppreference.com/w/cpp/error/out_of_range) if the requested service is not registered. If you prefer to get an empty [`std::shared_ptr<>`](https://en.cppreference.com/w/cpp/memory/shared_ptr) in such cases, use the `GetService<>()` method.
+The `GetRequiredService<>()` method will throw `sol::di::exceptions::ServiceNotRegisteredException` if the requested service is not registered. If you prefer to get an empty [`std::shared_ptr<>`](https://en.cppreference.com/w/cpp/memory/shared_ptr) in such cases, use the `GetService<>()` method.
 
 ## How to link it to your project
 

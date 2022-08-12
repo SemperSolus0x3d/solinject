@@ -41,7 +41,7 @@ int main()
 
         return 0;
     }
-    catch (std::exception& ex)
+    catch (const std::exception& ex)
     {
         std::cout << ex.what() << std::endl;
     }
@@ -99,6 +99,24 @@ void ItReturnsSameSingletonInstance()
 }
 
 template <bool isThreadsafe>
+void ItRegistersSingletonByInstance()
+{
+    using namespace test;
+
+    SameInstanceTestClass::ResetIds();
+
+    DIContainer<isThreadsafe> container;
+
+    container.template RegisterSingletonService<SameInstanceTestClass>(
+        std::make_shared<SameInstanceTestClass>(666)
+    );
+
+    auto instance = container.template GetRequiredService<SameInstanceTestClass>();
+
+    assert(instance->Id() == 666);
+}
+
+template <bool isThreadsafe>
 void ItReturnsDifferentTransientInstances()
 {
     using namespace test;
@@ -146,6 +164,8 @@ void ItReturnsMultipleRegisteredServices()
 {
     using namespace test;
 
+    SameInstanceTestClass::ResetIds();
+
     DIContainer<isThreadsafe> container;
 
     RegisterSingletonService(container, SameInstanceTestClass, 1);
@@ -163,6 +183,8 @@ template <bool isThreadsafe>
 void ItReturnsLastRegisteredService()
 {
     using namespace test;
+
+    SameInstanceTestClass::ResetIds();
 
     DIContainer<isThreadsafe> container;
 
@@ -219,14 +241,78 @@ void ItHandlesMultithreadedAccessCorrectly()
 }
 
 template<bool isThreadsafe>
+void ItDetectsCircularDependency()
+{
+    using namespace test;
+    using namespace exceptions;
+
+    DIContainer<isThreadsafe> container;
+
+    RegisterSingletonService(
+        container,
+        CircularDependencyTestClassA,
+        FROM_DI(CircularDependencyTestClassB)
+    );
+
+    RegisterSingletonService(
+        container,
+        CircularDependencyTestClassB,
+        FROM_DI(CircularDependencyTestClassA)
+    );
+
+    RegisterSingletonService(
+        container,
+        CircularDependencyTestClassC,
+        FROM_DI(CircularDependencyTestClassC)
+    );
+
+    bool exceptionThrownA = false;
+    bool exceptionThrownB = false;
+    bool exceptionThrownC = false;
+
+    try
+    {
+        container.template GetRequiredService<CircularDependencyTestClassA>();
+    }
+    catch (const CircularDependencyException& ex)
+    {
+        exceptionThrownA = true;
+    }
+
+    try
+    {
+        container.template GetRequiredService<CircularDependencyTestClassB>();
+    }
+    catch (const CircularDependencyException& ex)
+    {
+        exceptionThrownB = true;
+    }
+
+    try
+    {
+        container.template GetRequiredService<CircularDependencyTestClassC>();
+    }
+    catch (const CircularDependencyException& ex)
+    {
+        exceptionThrownC = true;
+    }
+
+    assert(exceptionThrownA);
+    assert(exceptionThrownB);
+    assert(exceptionThrownC);
+}
+
+template<bool isThreadsafe>
 void RunTests()
 {
     ItRegistersAndReturnsServices<isThreadsafe>();
     ItReturnsSameSingletonInstance<isThreadsafe>();
+    ItRegistersSingletonByInstance<isThreadsafe>();
     ItReturnsDifferentTransientInstances<isThreadsafe>();
     ItReturnsSameSharedInstanceWhileItIsAlive<isThreadsafe>();
     ItReturnsMultipleRegisteredServices<isThreadsafe>();
     ItReturnsLastRegisteredService<isThreadsafe>();
+    ItDetectsCircularDependency<isThreadsafe>();
 
     if constexpr (isThreadsafe)
     {

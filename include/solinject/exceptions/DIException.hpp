@@ -19,30 +19,22 @@
  */
 
 #pragma once
-#include "DIServiceBase.hpp"
+#include <stdexcept>
+#include <string>
 
-namespace sol::di::services
+namespace sol::di::exceptions
 {
-    template<class T, bool isThreadsafe>
-    class DITransientService : public DIServiceBase<T, isThreadsafe>
+    class DIException : public std::logic_error
     {
     public:
-        using Base = DIServiceBase<T, isThreadsafe>;
-        using Container = typename Base::Container;
-        using ServicePtr = typename Base::ServicePtr;
-        using Factory = typename Base::Factory;
-
-        DITransientService(const Factory factory) : m_Factory(factory)
+        DIException(const char* message) :
+            std::logic_error(message)
         {
         }
 
-    protected:
-        ServicePtr GetServiceInternal(const Container& container) override
+        DIException(const std::string& message) :
+            std::logic_error(message)
         {
-            return m_Factory(container);
         }
-
-    private:
-        Factory m_Factory;
-    }; // class DITransientService
-} // sol::di::services
+    };
+}

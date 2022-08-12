@@ -41,7 +41,8 @@ namespace sol::di::services
         {
         }
 
-        ServicePtr GetService(const Container& container) override
+    protected:
+        ServicePtr GetServiceInternal(const Container& container) override
         {
             ServicePtr instancePtr = m_ServicePtr.lock();
 

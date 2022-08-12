@@ -38,4 +38,7 @@ namespace sol::di::utils
 
     template <class TMutex, bool isEnabled>
     using DiscardableLock = std::conditional_t<isEnabled, std::lock_guard<TMutex>, Empty>;
+
+    template <bool isEnabled, class...TMutexes>
+    using DiscardableScopedLock = std::conditional_t<isEnabled, std::scoped_lock<TMutexes...>, Empty>;
 }
