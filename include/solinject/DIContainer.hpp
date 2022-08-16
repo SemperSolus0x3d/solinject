@@ -28,11 +28,12 @@
 #include <typeindex>
 #include <mutex>
 
+#include "Defines.hpp"
 #include "services/IDIService.hpp"
 #include "services/IDIServiceTyped.hpp"
 #include "services/DIRegisteredServices.hpp"
 #include "services/DIScopedServiceBuilders.hpp"
-#include "DIUtils.hpp"
+#include "Utils.hpp"
 
 namespace sol::di
 {
@@ -95,6 +96,11 @@ namespace sol::di
         template<class T>
         void RegisterSingletonService(ServicePtr<T> instance)
         {
+            solinject_assert(instance != nullptr);
+
+            if (instance == nullptr)
+                throw std::invalid_argument("instance was nullptr");
+
             auto lock = LockMutex();
             m_RegisteredServices.template RegisterSingletonService<T>(instance);
         }

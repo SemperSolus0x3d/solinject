@@ -27,10 +27,10 @@ namespace sol::di::services
     class DIScopedService : public DISingletonService<T>
     {
     public:
-        using Base = DIServiceBase<T>;
+        using Base = DISingletonService<T>;
         using Factory = typename Base::Factory;
 
-        DIScopedService(const Factory factory) : DISingletonService<T>(factory)
+        DIScopedService(const Factory factory) : Base(factory)
         {
         }
     }; // class DISingletonService

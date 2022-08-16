@@ -45,7 +45,7 @@ RegisterSingletonService(container, MyServiceClass/*, constructor params go here
 RegisterSingletonInterface(container, IMyServiceInterface, MyServiceClass/*, constructor params go here */);
 ```
 
-If your service has constructor parameters, that should be injected from the container, use the `FROM_DI()` macro or the `FROM_DI_MULTIPLE()` macro:
+If your service has constructor parameters, that should be injected from the container, use the `FROM_DI()` macro, the `FROM_DI_OPTIONAL()` macro or the `FROM_DI_MULTIPLE()` macro:
 
 ```c++
 RegisterSingletonService(container, MyServiceClass, FROM_DI(MyOtherServiceClass));
@@ -53,7 +53,9 @@ RegisterSingletonService(container, MyServiceClass, FROM_DI(MyOtherServiceClass)
 RegisterSingletonInterface(container, IMyServiceInterface, MyServiceClass, FROM_DI(MyOtherServiceClass));
 ```
 
-The `FROM_DI()` macro injects a single instance of the service as `std::shared_ptr<T>`, while the `FROM_DI_MULTIPLE()` macro injects multiple instances of the service or multiple implementations of the interface as `std::vector<std::shared_ptr<T>>`.
+The `FROM_DI()` and `FROM_DI_OPTIONAL()` macros inject a single instance of the service as `std::shared_ptr<T>`, while the `FROM_DI_MULTIPLE()` macro injects multiple instances of the service or multiple implementations of the interface as `std::vector<std::shared_ptr<T>>`.
+
+The `FROM_DI_OPTIONAL()` macro should be used when the injected service is *optional*. *Optional* here means that a service **may** or **may not** be registered and it **doesn't** mean that a service may be registered with a nullptr or a factory method that returns nullptr.
 
 If you have a [`std::shared_ptr<>`](https://en.cppreference.com/w/cpp/memory/shared_ptr) or a [`std::unique_ptr<>`](https://en.cppreference.com/w/cpp/memory/unique_ptr) to an instance of the service, you can register it as a singleton:
 

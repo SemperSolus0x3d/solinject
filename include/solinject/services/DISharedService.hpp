@@ -19,6 +19,7 @@
  */
 
 #pragma once
+#include "solinject/Defines.hpp"
 #include "DIServiceBase.hpp"
 
 namespace sol::di::services
@@ -53,6 +54,9 @@ namespace sol::di::services
             else
             {
                 ServicePtr newInstancePtr = m_Factory(container);
+
+                solinject_req_assert(newInstancePtr != nullptr && "Factory should never return nullptr");
+
                 m_ServicePtr = ServiceWeakPtr(newInstancePtr);
                 return newInstancePtr;
             }

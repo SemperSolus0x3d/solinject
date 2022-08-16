@@ -19,6 +19,7 @@
  */
 
 #pragma once
+#include "solinject/Defines.hpp"
 #include "IDIServiceTyped.hpp"
 #include "solinject/exceptions/CircularDependencyException.hpp"
 
@@ -37,6 +38,8 @@ namespace sol::di::services
 
         virtual ServicePtr GetService(const Container& container)
         {
+            solinject_assert(!m_IsLocked && "There are no circular dependencies");
+
             if (m_IsLocked)
             {
                 m_IsLocked = false;
@@ -46,6 +49,8 @@ namespace sol::di::services
             m_IsLocked = true;
             auto service = GetServiceInternal(container);
             m_IsLocked = false;
+
+            solinject_req_assert(service != nullptr);
 
             return service;
         }
