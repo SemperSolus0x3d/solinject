@@ -19,43 +19,19 @@
  */
 
 #pragma once
-#include "IDIServiceTyped.hpp"
-#include "solinject/exceptions/CircularDependencyException.hpp"
+#include "DISingletonService.hpp"
 
 namespace sol::di::services
 {
-    template <class T>
-    class DIServiceBase : public IDIServiceTyped<T>
+    template<class T>
+    class DIScopedService : public DISingletonService<T>
     {
     public:
-        using Base = IDIServiceTyped<T>;
-        using ServicePtr = typename Base::ServicePtr;
+        using Base = DIServiceBase<T>;
         using Factory = typename Base::Factory;
-        using Container = typename Base::Container;
 
-        virtual ~DIServiceBase() = 0;
-
-        virtual ServicePtr GetService(const Container& container)
+        DIScopedService(const Factory factory) : DISingletonService<T>(factory)
         {
-            if (m_IsLocked)
-            {
-                m_IsLocked = false;
-                throw exceptions::CircularDependencyException(typeid(T));
-            }
-
-            m_IsLocked = true;
-            auto service = GetServiceInternal(container);
-            m_IsLocked = false;
-
-            return service;
         }
-
-    protected:
-        bool m_IsLocked = false;
-
-        virtual ServicePtr GetServiceInternal(const Container& container) = 0;
-    };
-
-    template <class T>
-    DIServiceBase<T>::~DIServiceBase() {}
-}
+    }; // class DISingletonService
+} // sol::di::services

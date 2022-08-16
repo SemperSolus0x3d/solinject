@@ -64,3 +64,17 @@
         { \
             return std::make_unique<implementation>(__VA_ARGS__); \
         })
+
+#define RegisterScopedService(container, class_, ...) \
+    (container).template RegisterScopedService<class_>( \
+        [](const auto& c) \
+        { \
+            return std::make_unique<class_>(__VA_ARGS__); \
+        })
+
+#define RegisterScopedInterface(container, interface_, implementation, ...) \
+    (container).template RegisterScopedService<interface_>( \
+        [](const auto& c) \
+        { \
+            return std::make_unique<implementation>(__VA_ARGS__); \
+        })
