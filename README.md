@@ -70,14 +70,14 @@ If for some reason you want to go the hard way, you can register the service dir
 ```c++
 container.template RegisterSingletonService<MyServiceClass>([](const auto& container)
 {
-    return std::make_unique<MyServiceClass>(
+    return std::make_shared<MyServiceClass>(
         container.template GetRequiredService<MyOtherServiceClass>()
     );
 });
 // or
 container.template RegisterSingletonService<IMyServiceInterface>([](const auto& container)
 {
-    return std::make_unique<MyServiceClass>(
+    return std::make_shared<MyServiceClass>(
         container.template GetRequiredService<MyOtherServiceClass>()
     );
 });
