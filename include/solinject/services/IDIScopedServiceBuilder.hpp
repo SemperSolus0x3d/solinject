@@ -19,26 +19,17 @@
  */
 
 #pragma once
-#include <memory>
-#include <functional>
-
-namespace sol::di { class DIContainer; }
+#include "DIScopedService.hpp"
 
 namespace sol::di::services
 {
-    template <class T>
-    class IDIServiceTyped : public IDIService
+    class IDIScopedServiceBuilder
     {
     public:
-        using Container = sol::di::DIContainer;
-        using ServicePtr = typename std::shared_ptr<T>;
-        using Factory = typename std::function<ServicePtr(const Container&)>;
+        using DIServicePtr = std::shared_ptr<IDIService>;
 
-        virtual ~IDIServiceTyped() = 0;
+        virtual ~IDIScopedServiceBuilder() {}
 
-        virtual ServicePtr GetService(const Container& container) = 0;
+        virtual DIServicePtr BuildDIService() const = 0;
     };
-
-    template <class T>
-    IDIServiceTyped<T>::~IDIServiceTyped() {}
 }

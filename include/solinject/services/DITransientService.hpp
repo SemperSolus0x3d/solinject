@@ -23,11 +23,11 @@
 
 namespace sol::di::services
 {
-    template<class T, bool isThreadsafe>
-    class DITransientService : public DIServiceBase<T, isThreadsafe>
+    template<class T>
+    class DITransientService : public DIServiceBase<T>
     {
     public:
-        using Base = DIServiceBase<T, isThreadsafe>;
+        using Base = DIServiceBase<T>;
         using Container = typename Base::Container;
         using ServicePtr = typename Base::ServicePtr;
         using Factory = typename Base::Factory;

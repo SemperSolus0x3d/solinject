@@ -9,7 +9,7 @@ C++17 Dependency Injection header-only library
 
 ## Features
 
-- Supports singleton[^singleton-service], transient[^transient-service] and shared[^shared_service] services.
+- Supports singleton[^singleton-service], transient[^transient-service], shared[^shared-service] and scoped[^scoped-service] services.
 - Supports registering multiple services of the same type or multiple implementations of the same interface and resolving them all at once.
 - Threadsafe (can be disabled if your program is single-threaded).
 - Has runtime circular dependency checks.
@@ -24,16 +24,17 @@ C++17 Dependency Injection header-only library
 ### `#include` it
 
 ```c++
+#define SOLINJECT_NOTHREADSAFE // If your program is single-threaded
 #include <solinject.hpp>
 #include <solinject-macros.hpp>
 ```
 
-`solinject.hpp` contains the `sol::di::DIContainer<>` class, and `solinject-macros.hpp` provides you some handy macros for registering services.
+`solinject.hpp` contains the `sol::di::DIContainer` class, and `solinject-macros.hpp` provides you some handy macros for registering services.
 
 ### Create a container
 
 ```c++
-sol::di::DIContainer<> container;
+sol::di::DIContainer container;
 ```
 
 ### Register a service
@@ -98,72 +99,92 @@ std::vector<std::shared_ptr<IMyServiceInterface>> myServices = container.templat
 
 The `GetRequiredService<>()` method will throw `sol::di::exceptions::ServiceNotRegisteredException` if the requested service is not registered. If you prefer to get an empty [`std::shared_ptr<>`](https://en.cppreference.com/w/cpp/memory/shared_ptr) in such cases, use the `GetService<>()` method.
 
+If you want to use scoped services, then create a scope:
+
+```c++
+sol::di::DIContainerScope scope = container.CreateScope();
+```
+
+and resolve your services from this scope just like you would from a container:
+
+```c++
+std::shared_ptr<MyServiceClass> myService1 = scope.template GetRequiredService<MyServiceClass>();
+
+std::shared_ptr<IMyServiceInterface> myService2 = scope.template GetRequiredService<IMyServiceInterface>();
+
+std::vector<std::shared_ptr<MyServiceClass>> myServices1 = scope.template GetServices<MyServiceClass>();
+
+std::vector<std::shared_ptr<IMyServiceInterface>> myServices2 = scope.template GetServices<IMyServiceInterface>();
+```
+
+`sol::di::DIContainerScope` can do everything a regular `sol::di::DIContainer` can do. You can register services to it (even scoped services), resolve services from it etc. You can even create a scope from a scope, and then create a scope from that scope and so on.
+
 ## How to link it to your project
 
 There are a few ways to link solinject to your project. Here's an incomplete list of them (the most recommended first):
 
 - ### CMake FetchContent
 
-Add these lines to your top-level `CMakeLists.txt`, replacing `v1.0.0` with your preferred version:
+    Add these lines to your top-level `CMakeLists.txt`, replacing `v1.0.0` with your preferred version:
 
-```cmake
-include(FetchContent)
+    ```cmake
+    include(FetchContent)
 
-FetchContent_Declare(
-    solinject
-    GIT_REPOSITORY https://github.com/SemperSolus0x3d/solinject
-    GIT_TAG v1.0.0
-)
+    FetchContent_Declare(
+        solinject
+        GIT_REPOSITORY https://github.com/SemperSolus0x3d/solinject
+        GIT_TAG v1.0.0
+    )
 
-FetchContent_MakeAvailable(solinject)
-```
+    FetchContent_MakeAvailable(solinject)
+    ```
 
-And then link the `sol::solinject` target to your project's target:
+    And then link the `sol::solinject` target to your project's target:
 
-```cmake
-target_link_libraries(YOUR_TARGET sol::solinject)
-```
+    ```cmake
+    target_link_libraries(YOUR_TARGET sol::solinject)
+    ```
 
 - ### Git Submodule
 
-In your project folder run:
+    In your project folder run:
 
-```bash
-mkdir extern
-git submodule add "https://github.com/SemperSolus0x3d/solinject" extern/solinject
-cd extern/solinject
-git checkout v1.0.0
-cd ../..
-```
+    ```bash
+    mkdir extern
+    git submodule add "https://github.com/SemperSolus0x3d/solinject" extern/solinject
+    cd extern/solinject
+    git checkout v1.0.0
+    cd ../..
+    ```
 
-Then in your top-level `CMakeLists.txt` add this submodule as subdirectory and link `sol::solinject` to your project's target:
+    Then in your top-level `CMakeLists.txt` add this submodule as subdirectory and link `sol::solinject` to your project's target:
 
-```cmake
-add_subdirectory(extern/solinject)
-target_link_libraries(YOUR_TARGET sol::solinject)
-```
+    ```cmake
+    add_subdirectory(extern/solinject)
+    target_link_libraries(YOUR_TARGET sol::solinject)
+    ```
 
 - ### CMake find_package()
 
-[Build](#how-to-build-it) or download the [latest release](https://github.com/SemperSolus0x3d/solinject/releases/latest), install it to your CMake packages installation prefix and link it to your project's target:
+    [Build](#how-to-build-it) or download the [latest release](https://github.com/SemperSolus0x3d/solinject/releases/latest), install it to your CMake packages installation prefix and link it to your project's target:
 
-```cmake
-find_package(solinject VERSION 1.0.0 REQUIRED)
-target_link_libraries(YOUR_TARGET sol::solinject)
-```
+    ```cmake
+    find_package(solinject VERSION 1.0.0 REQUIRED)
+    target_link_libraries(YOUR_TARGET sol::solinject)
+    ```
 
 - ### Add as subdirectory
 
-Download the [latest release](https://github.com/SemperSolus0x3d/solinject/releases/latest) source code, extract it to your project's directory for dependencies (in my example it's `lib`) and add it to your project as subdirectory:
+    Download the [latest release](https://github.com/SemperSolus0x3d/solinject/releases/latest) source code, extract it to your project's directory for dependencies (in my example it's `lib`) and add it to your project as subdirectory:
 
-```cmake
-add_subdirectory(lib/solinject)
-target_link_libraries(YOUR_TARGET sol::solinject)
-```
+    ```cmake
+    add_subdirectory(lib/solinject)
+    target_link_libraries(YOUR_TARGET sol::solinject)
+    ```
 
 - ### Copy-paste
 
-solinject is a header-only library, so you can just copy everything from project's `include` directory and paste it into your project's `include` directory
+    solinject is a header-only library, so you can just copy everything from this project's `include` directory and paste it into your project's `include` directory. Make sure to add the folder containing `solinject.hpp` and `solinject-macros.hpp` to your compiler include directories.
 
 ## How to build it
 
@@ -218,4 +239,6 @@ GNU Lesser General Public License for more details.
 
 [^transient-service]: A transient service is created each time it is requested.
 
-[^shared_service]: A shared service exists while it is used. When a shared service is requested, if an instance already exists, that instance is returned; otherwise a new instance is created.
+[^shared-service]: A shared service exists while it is used. When a shared service is requested, if an instance already exists, that instance is returned; otherwise a new instance is created.
+
+[^scoped-service]: A scoped service behaves like a singleton inside its scope and derived scopes.

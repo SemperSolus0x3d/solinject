@@ -19,40 +19,28 @@
  */
 
 #pragma once
-#include "DIServiceBase.hpp"
+#include "IDIScopedServiceBuilder.hpp"
 
 namespace sol::di::services
 {
     template<class T>
-    class DISingletonService : public DIServiceBase<T>
+    class DIScopedServiceBuilder : public IDIScopedServiceBuilder
     {
     public:
-        using Base = DIServiceBase<T>;
-        using Container = typename Base::Container;
-        using ServicePtr = typename Base::ServicePtr;
-        using Factory = typename Base::Factory;
+        using Base = IDIScopedServiceBuilder;
+        using DIService = DIScopedService<T>;
+        using AbstractDIServicePtr = typename Base::DIServicePtr;
+        using Factory = typename DIService::Factory;
 
-        DISingletonService(ServicePtr service) : m_ServicePtr(service)
+        DIScopedServiceBuilder(Factory factory) : m_Factory(factory)
         {
         }
 
-        DISingletonService(const Factory factory) : m_Factory(factory), m_ServicePtr(nullptr)
+        AbstractDIServicePtr BuildDIService() const override
         {
+            return std::make_shared<DIService>(m_Factory);
         }
-
-        virtual ~DISingletonService() {}
-
-    protected:
-        ServicePtr GetServiceInternal(const Container& container) override
-        {
-            if (m_ServicePtr == nullptr)
-                m_ServicePtr = m_Factory(container);
-
-            return m_ServicePtr;
-        }
-
     private:
-        ServicePtr m_ServicePtr;
         Factory m_Factory;
-    }; // class DISingletonService
-} // sol::di::services
+    };
+}

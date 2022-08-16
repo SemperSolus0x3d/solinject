@@ -29,15 +29,13 @@
 
 using namespace sol::di;
 
-template<bool isThreadsafe>
 void RunTests();
 
 int main()
 {
     try
     {
-        RunTests<true>();
-        RunTests<false>();
+        RunTests();
 
         return 0;
     }
@@ -49,12 +47,11 @@ int main()
     return -1;
 }
 
-template <bool isThreadsafe>
 void ItRegistersAndReturnsServices()
 {
     using namespace sol::di::test;
 
-    DIContainer<isThreadsafe> container;
+    DIContainer container;
 
     RegisterSingletonService(container, TestA);
     RegisterTransientService(container, TestB, FROM_DI(TestA));
@@ -81,14 +78,13 @@ void ItRegistersAndReturnsServices()
     assert(g != nullptr);
 }
 
-template <bool isThreadsafe>
 void ItReturnsSameSingletonInstance()
 {
     using namespace test;
 
     SameInstanceTestClass::ResetIds();
 
-    DIContainer<isThreadsafe> container;
+    DIContainer container;
 
     RegisterSingletonService(container, SameInstanceTestClass);
 
@@ -98,14 +94,13 @@ void ItReturnsSameSingletonInstance()
     assert(instance1->Id() == instance2->Id());
 }
 
-template <bool isThreadsafe>
 void ItRegistersSingletonByInstance()
 {
     using namespace test;
 
     SameInstanceTestClass::ResetIds();
 
-    DIContainer<isThreadsafe> container;
+    DIContainer container;
 
     container.template RegisterSingletonService<SameInstanceTestClass>(
         std::make_shared<SameInstanceTestClass>(666)
@@ -116,14 +111,13 @@ void ItRegistersSingletonByInstance()
     assert(instance->Id() == 666);
 }
 
-template <bool isThreadsafe>
 void ItReturnsDifferentTransientInstances()
 {
     using namespace test;
 
     SameInstanceTestClass::ResetIds();
 
-    DIContainer<isThreadsafe> container;
+    DIContainer container;
 
     RegisterTransientService(container, SameInstanceTestClass);
 
@@ -133,14 +127,13 @@ void ItReturnsDifferentTransientInstances()
     assert(instance1->Id() != instance2->Id());
 }
 
-template <bool isThreadsafe>
 void ItReturnsSameSharedInstanceWhileItIsAlive()
 {
     using namespace test;
 
     SameInstanceTestClass::ResetIds();
 
-    DIContainer<isThreadsafe> container;
+    DIContainer container;
 
     RegisterSharedService(container, SameInstanceTestClass);
 
@@ -159,14 +152,55 @@ void ItReturnsSameSharedInstanceWhileItIsAlive()
     assert(instance3->Id() != firstInstanceId);
 }
 
-template <bool isThreadsafe>
+void ItReturnsCorrectScopedServiceInstance()
+{
+    using namespace test;
+
+    SameInstanceTestClass::ResetIds();
+
+    DIContainer container;
+
+    RegisterScopedService(container, SameInstanceTestClass);
+
+    auto scope1 = container.CreateScope();
+    auto scope2 = container.CreateScope();
+
+    auto instance1 = scope1.template GetRequiredService<SameInstanceTestClass>();
+    auto instance2 = scope1.template GetRequiredService<SameInstanceTestClass>();
+
+    auto instance3 = scope2.template GetRequiredService<SameInstanceTestClass>();
+
+    assert(instance1->Id() == instance2->Id());
+    assert(instance1->Id() != instance3->Id());
+}
+
+void ItAllowsCreatingScopeOfAScope()
+{
+    using namespace test;
+
+    SameInstanceTestClass::ResetIds();
+
+    DIContainer container;
+    RegisterScopedService(container, SameInstanceTestClass);
+
+    auto scope1 = container.CreateScope();
+    RegisterScopedService(scope1, SameInstanceTestClass);
+
+    auto scope1_1 = scope1.CreateScope();
+
+    auto instance1 = scope1.template GetRequiredService<SameInstanceTestClass>();
+    auto instance1_1 = scope1_1.template GetRequiredService<SameInstanceTestClass>();
+
+    assert(instance1->Id() != instance1_1->Id());
+}
+
 void ItReturnsMultipleRegisteredServices()
 {
     using namespace test;
 
     SameInstanceTestClass::ResetIds();
 
-    DIContainer<isThreadsafe> container;
+    DIContainer container;
 
     RegisterSingletonService(container, SameInstanceTestClass, 1);
     RegisterSingletonService(container, SameInstanceTestClass, 2);
@@ -179,14 +213,13 @@ void ItReturnsMultipleRegisteredServices()
     assert(instances[2]->Id() == 3);
 }
 
-template <bool isThreadsafe>
 void ItReturnsLastRegisteredService()
 {
     using namespace test;
 
     SameInstanceTestClass::ResetIds();
 
-    DIContainer<isThreadsafe> container;
+    DIContainer container;
 
     RegisterSingletonService(container, SameInstanceTestClass, 1);
     RegisterSingletonService(container, SameInstanceTestClass, 2);
@@ -201,7 +234,7 @@ void ItHandlesMultithreadedAccessCorrectly()
 {
     using namespace sol::di::test;
 
-    DIContainer<true> container;
+    DIContainer container;
 
     std::vector<std::thread> threads;
 
@@ -215,11 +248,13 @@ void ItHandlesMultithreadedAccessCorrectly()
                 RegisterSingletonInterface(container, ITestD, TestD, FROM_DI(TestC));
                 RegisterTransientService(container, TestE, FROM_DI(ITestD));
                 RegisterSharedService(container, TestF, FROM_DI(TestE));
-                RegisterSingletonService(container, TestG, FROM_DI_MULTIPLE(TestF));
+                RegisterScopedService(container, TestG, FROM_DI_MULTIPLE(TestF));
+
+                auto scope = container.CreateScope();
 
                 auto d = container.template GetRequiredService<ITestD>();
                 auto a = container.template GetRequiredService<TestA>();
-                auto g = container.template GetRequiredService<TestG>();
+                auto g = scope.template GetRequiredService<TestG>();
                 auto e = container.template GetRequiredService<TestE>();
                 auto c = container.template GetRequiredService<TestC>();
                 auto b = container.template GetRequiredService<TestB>();
@@ -240,13 +275,12 @@ void ItHandlesMultithreadedAccessCorrectly()
             threads[i].join();
 }
 
-template<bool isThreadsafe>
 void ItDetectsCircularDependency()
 {
     using namespace test;
     using namespace exceptions;
 
-    DIContainer<isThreadsafe> container;
+    DIContainer container;
 
     RegisterSingletonService(
         container,
@@ -302,20 +336,18 @@ void ItDetectsCircularDependency()
     assert(exceptionThrownC);
 }
 
-template<bool isThreadsafe>
 void RunTests()
 {
-    ItRegistersAndReturnsServices<isThreadsafe>();
-    ItReturnsSameSingletonInstance<isThreadsafe>();
-    ItRegistersSingletonByInstance<isThreadsafe>();
-    ItReturnsDifferentTransientInstances<isThreadsafe>();
-    ItReturnsSameSharedInstanceWhileItIsAlive<isThreadsafe>();
-    ItReturnsMultipleRegisteredServices<isThreadsafe>();
-    ItReturnsLastRegisteredService<isThreadsafe>();
-    ItDetectsCircularDependency<isThreadsafe>();
+    ItRegistersAndReturnsServices();
+    ItReturnsSameSingletonInstance();
+    ItRegistersSingletonByInstance();
+    ItReturnsDifferentTransientInstances();
+    ItReturnsSameSharedInstanceWhileItIsAlive();
+    ItReturnsCorrectScopedServiceInstance();
+    ItAllowsCreatingScopeOfAScope();
+    ItReturnsMultipleRegisteredServices();
+    ItReturnsLastRegisteredService();
+    ItDetectsCircularDependency();
 
-    if constexpr (isThreadsafe)
-    {
-        ItHandlesMultithreadedAccessCorrectly();
-    }
+    ItHandlesMultithreadedAccessCorrectly();
 }

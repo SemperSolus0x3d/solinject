@@ -30,10 +30,8 @@
 
 #include "services/IDIService.hpp"
 #include "services/IDIServiceTyped.hpp"
-#include "services/DISingletonService.hpp"
-#include "services/DITransientService.hpp"
-#include "services/DISharedService.hpp"
-#include "exceptions/ServiceNotRegisteredException.hpp"
+#include "services/DIRegisteredServices.hpp"
+#include "services/DIScopedServiceBuilders.hpp"
 #include "DIUtils.hpp"
 
 namespace sol::di
@@ -43,17 +41,18 @@ namespace sol::di
         class IDIService;
     }
 
-    template <bool isThreadsafe = true>
+    class DIContainerScope;
+
     class DIContainer
     {
     public:
         template <class T>
-        using Factory = typename services::IDIServiceTyped<T, isThreadsafe>::Factory;
+        using Factory = typename services::IDIServiceTyped<T>::Factory;
 
         template <class T>
-        using ServicePtr = typename services::IDIServiceTyped<T, isThreadsafe>::ServicePtr;
+        using ServicePtr = typename services::IDIServiceTyped<T>::ServicePtr;
 
-        DIContainer() {}
+        DIContainer() : m_Mutex(std::make_shared<Mutex>()) {}
 
         DIContainer(const DIContainer& other) = delete;
 
@@ -70,138 +69,146 @@ namespace sol::di
             return *this;
         }
 
-        friend void swap(DIContainer<isThreadsafe>& a, DIContainer<isThreadsafe>& b) noexcept
+        friend void swap(DIContainer& a, DIContainer& b) noexcept
         {
-            using namespace utils;
             using std::swap;
 
             if (&a == &b)
                 return;
 
-            DiscardableScopedLock<isThreadsafe, Mutex, Mutex> lock(a.m_Mutex, b.m_Mutex);
+            ScopedLock lock(*a.m_Mutex, *b.m_Mutex);
 
-            swap(a.m_Services, b.m_Services);
+            swap(a.m_RegisteredServices, b.m_RegisteredServices);
+            swap(a.m_ScopedServiceBuilders, b.m_ScopedServiceBuilders);
+            swap(a.m_Mutex, b.m_Mutex);
         }
+
+        DIContainerScope CreateScope() const;
 
         template<class T>
         void RegisterSingletonService(const Factory<T> factory)
         {
-            RegisterServiceInternal<T, services::DISingletonService<T, isThreadsafe>>(factory);
+            auto lock = LockMutex();
+            m_RegisteredServices.template RegisterSingletonService<T>(factory);
         }
 
         template<class T>
         void RegisterSingletonService(ServicePtr<T> instance)
         {
-            RegisterServiceInternal<T, services::DISingletonService<T, isThreadsafe>>(instance);
+            auto lock = LockMutex();
+            m_RegisteredServices.template RegisterSingletonService<T>(instance);
         }
 
         template<class T>
         void RegisterTransientService(const Factory<T> factory)
         {
-            RegisterServiceInternal<T, services::DITransientService<T, isThreadsafe>>(factory);
+            auto lock = LockMutex();
+            m_RegisteredServices.template RegisterTransientService<T>(factory);
         }
 
         template<class T>
         void RegisterSharedService(const Factory<T> factory)
         {
-            RegisterServiceInternal<T, services::DISharedService<T, isThreadsafe>>(factory);
+            auto lock = LockMutex();
+            m_RegisteredServices.template RegisterSharedService<T>(factory);
+        }
+
+        template<class T>
+        void RegisterScopedService(const Factory<T> factory)
+        {
+            auto lock = LockMutex();
+            m_ScopedServiceBuilders.template RegisterScopedService<T>(factory);
         }
 
         template<class T>
         ServicePtr<T> GetRequiredService() const
         {
-            return GetServiceInternal<T, false>();
+            auto lock = LockMutex();
+            return m_RegisteredServices.template GetRequiredService<T>(*this);
         }
 
         template <class T>
         ServicePtr<T> GetService() const
         {
-            return GetServiceInternal<T, true>();
+            auto lock = LockMutex();
+            return m_RegisteredServices.template GetService<T>(*this);
         }
 
         template <class T>
         std::vector<ServicePtr<T>> GetServices() const
         {
-            using namespace std::string_literals;
-
             auto lock = LockMutex();
+            return m_RegisteredServices.template GetServices<T>(*this);
+        }
 
-            auto serviceIt = m_Services.find(std::type_index(typeid(T)));
+    protected:
+        #ifndef SOLINJECT_NOTHREADSAFE
+            using Mutex = std::recursive_mutex;
+            using Lock = std::lock_guard<Mutex>;
+            using ScopedLock = std::scoped_lock<Mutex, Mutex>;
+        #else
+            using Mutex = utils::Empty;
+            using Lock = utils::Empty;
+            using ScopedLock = utils::Empty;
+        #endif
 
-            if (serviceIt == m_Services.end())
-                return std::vector<ServicePtr<T>>();
+        using MutexPtr = std::shared_ptr<Mutex>;
 
-            auto& services = serviceIt->second;
-
-            std::vector<ServicePtr<T>> result;
-            result.reserve(services.size());
-
-            std::transform(
-                services.begin(),
-                services.end(),
-                std::back_inserter(result),
-                [this](auto& diService)
-                {
-                    return GetServiceInstance<T>(diService);
-                }
-            );
-
-            return result;
+        DIContainer(
+            services::DIRegisteredServices&& services,
+            MutexPtr mutexPtr
+        ) :
+            m_RegisteredServices(std::move(services)),
+            m_Mutex(mutexPtr)
+        {
         }
 
     private:
-        using DIServicePtr = std::unique_ptr<services::IDIService>;
-        using Mutex = std::recursive_mutex;
+        services::DIRegisteredServices m_RegisteredServices;
+        services::DIScopedServiceBuilders m_ScopedServiceBuilders;
 
-        std::map<std::type_index, std::vector<DIServicePtr>> m_Services;
+        MutexPtr m_Mutex;
 
-        mutable utils::DiscardableMutex<Mutex, isThreadsafe> m_Mutex;
-
-        template <class T>
-        ServicePtr<T> GetServiceInstance(const DIServicePtr& diServicePtr) const
+        Lock LockMutex() const
         {
-            return static_cast<services::IDIServiceTyped<T, isThreadsafe>*>(diServicePtr.get())->GetService(*this);
-        }
-
-        template <class TService, class TDIService>
-        void RegisterServiceInternal(Factory<TService> factory)
-        {
-            auto lock = LockMutex();
-
-            m_Services[std::type_index(typeid(TService))].push_back(std::make_unique<TDIService>(factory));
-        }
-
-        template <class TService, class TDIService>
-        void RegisterServiceInternal(ServicePtr<TService> instance)
-        {
-            auto lock = LockMutex();
-
-            m_Services[std::type_index(typeid(TService))].push_back(std::make_unique<TDIService>(instance));
-        }
-
-        template <class T, bool nothrow>
-        ServicePtr<T> GetServiceInternal() const
-        {
-            using namespace std::string_literals;
-
-            auto lock = LockMutex();
-
-            auto serviceIt = m_Services.find(std::type_index(typeid(T)));
-
-            if (serviceIt == m_Services.end() || serviceIt->second.empty())
-                if constexpr (nothrow)
-                    return nullptr;
-                else
-                    throw exceptions::ServiceNotRegisteredException(typeid(T));
-
-            auto& services = serviceIt->second;
-
-            return GetServiceInstance<T>(*services.rbegin());
-        }
-
-        utils::DiscardableLock<Mutex, isThreadsafe> LockMutex() const
-        {
-            return utils::DiscardableLock<Mutex, isThreadsafe>(m_Mutex);
+            return Lock(*m_Mutex);
         }
     }; // class DIContainer
+
+    class DIContainerScope : public DIContainer
+    {
+    public:
+        using MutexPtr = DIContainer::MutexPtr;
+
+        DIContainerScope(
+            services::DIRegisteredServices&& services,
+            MutexPtr mutexPtr
+        ) : DIContainer(std::move(services), mutexPtr)
+        {
+        }
+
+        DIContainerScope(const DIContainerScope&) = delete;
+        DIContainerScope(DIContainerScope&& other) : DIContainer(std::move(other))
+        {
+        }
+
+        DIContainerScope& operator=(const DIContainerScope&) = delete;
+        DIContainerScope& operator=(DIContainerScope&& other)
+        {
+            DIContainer::operator=(std::move(other));
+            return *this;
+        }
+    }; // class DIContainerScope
+
+    DIContainerScope DIContainer::CreateScope() const
+    {
+        using namespace services;
+
+        auto lock = LockMutex();
+
+        DIRegisteredServices diServices = m_RegisteredServices;
+        diServices.Merge(m_ScopedServiceBuilders.BuildDIServices());
+
+        return DIContainerScope(std::move(diServices), m_Mutex);
+    }
 } // sol::di
