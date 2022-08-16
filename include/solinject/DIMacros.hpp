@@ -21,6 +21,7 @@
 #pragma once
 
 #define FROM_DI(class_) (c.template GetRequiredService<class_>())
+#define FROM_DI_OPTIONAL(class_) (c.template GetService<class_>())
 #define FROM_DI_MULTIPLE(class_) (c.template GetServices<class_>())
 
 #define RegisterSingletonService(container, class_, ...) \

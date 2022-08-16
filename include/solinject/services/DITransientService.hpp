@@ -19,6 +19,7 @@
  */
 
 #pragma once
+#include "solinject/Defines.hpp"
 #include "DIServiceBase.hpp"
 
 namespace sol::di::services
@@ -39,7 +40,11 @@ namespace sol::di::services
     protected:
         ServicePtr GetServiceInternal(const Container& container) override
         {
-            return m_Factory(container);
+            auto service = m_Factory(container);
+
+            solinject_req_assert(service != nullptr && "Factory should never return nullptr");
+
+            return service;
         }
 
     private:

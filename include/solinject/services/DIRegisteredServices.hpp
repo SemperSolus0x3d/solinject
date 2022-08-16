@@ -27,6 +27,7 @@
 #include <typeinfo>
 #include <typeindex>
 
+#include "solinject/Defines.hpp"
 #include "IDIService.hpp"
 #include "IDIServiceTyped.hpp"
 #include "DISingletonService.hpp"
@@ -175,12 +176,16 @@ namespace sol::di::services
         template <class TService, class TDIService>
         void RegisterServiceInternal(ServicePtr<TService> instance)
         {
+            solinject_req_assert(instance != nullptr);
+
             m_RegisteredServices[std::type_index(typeid(TService))].push_back(std::make_shared<TDIService>(instance));
         }
 
         template <class T>
         ServicePtr<T> GetServiceInstance(const DIServicePtr& diServicePtr, const DIContainer& container) const
         {
+            solinject_req_assert(diServicePtr != nullptr);
+
             return static_cast<IDIServiceTyped<T>*>(diServicePtr.get())->GetService(container);
         }
 
@@ -191,7 +196,14 @@ namespace sol::di::services
 
             auto serviceIt = m_RegisteredServices.find(std::type_index(typeid(T)));
 
-            if (serviceIt == m_RegisteredServices.end() || serviceIt->second.empty())
+            bool serviceFound =
+                serviceIt != m_RegisteredServices.end() &&
+                !serviceIt->second.empty();
+
+            if constexpr (!nothrow)
+                solinject_assert(serviceFound);
+
+            if (!serviceFound)
                 if constexpr (nothrow)
                     return nullptr;
                 else

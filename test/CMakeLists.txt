@@ -33,6 +33,7 @@ macro(add_test_executable name source_file)
         "${CMAKE_CURRENT_SOURCE_DIR}/integration"
     )
     target_link_libraries("${name}" solinject Threads::Threads)
+    target_compile_definitions("${name}" PRIVATE SOLINJECT_TESTING)
     add_test(NAME "${name}" COMMAND "$<TARGET_FILE:${name}>")
 endmacro()
 
