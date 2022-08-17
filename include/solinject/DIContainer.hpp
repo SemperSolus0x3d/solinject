@@ -84,7 +84,19 @@ namespace sol::di
             swap(a.m_Mutex, b.m_Mutex);
         }
 
-        DIContainerScope CreateScope() const;
+        DIContainer CreateScope() const
+        {
+            using namespace services;
+
+            auto lock = LockMutex();
+
+            DIRegisteredServices diServices = m_RegisteredServices;
+            diServices.Merge(m_ScopedServiceBuilders.BuildDIServices());
+
+            return DIContainer(std::move(diServices), m_Mutex);
+        }
+
+        bool IsScope() { return m_IsScope; }
 
         template<class T>
         void RegisterSingletonService(const Factory<T> factory)
@@ -147,7 +159,7 @@ namespace sol::di
             return m_RegisteredServices.template GetServices<T>(*this);
         }
 
-    protected:
+    private:
         #ifndef SOLINJECT_NOTHREADSAFE
             using Mutex = std::recursive_mutex;
             using Lock = std::lock_guard<Mutex>;
@@ -165,56 +177,22 @@ namespace sol::di
             MutexPtr mutexPtr
         ) :
             m_RegisteredServices(std::move(services)),
-            m_Mutex(mutexPtr)
+            m_Mutex(mutexPtr),
+            m_IsScope(true)
         {
+            solinject_req_assert(mutexPtr != nullptr);
         }
 
-    private:
         services::DIRegisteredServices m_RegisteredServices;
         services::DIScopedServiceBuilders m_ScopedServiceBuilders;
 
         MutexPtr m_Mutex;
+
+        bool m_IsScope = false;
 
         Lock LockMutex() const
         {
             return Lock(*m_Mutex);
         }
     }; // class DIContainer
-
-    class DIContainerScope : public DIContainer
-    {
-    public:
-        using MutexPtr = DIContainer::MutexPtr;
-
-        DIContainerScope(
-            services::DIRegisteredServices&& services,
-            MutexPtr mutexPtr
-        ) : DIContainer(std::move(services), mutexPtr)
-        {
-        }
-
-        DIContainerScope(const DIContainerScope&) = delete;
-        DIContainerScope(DIContainerScope&& other) : DIContainer(std::move(other))
-        {
-        }
-
-        DIContainerScope& operator=(const DIContainerScope&) = delete;
-        DIContainerScope& operator=(DIContainerScope&& other)
-        {
-            DIContainer::operator=(std::move(other));
-            return *this;
-        }
-    }; // class DIContainerScope
-
-    DIContainerScope DIContainer::CreateScope() const
-    {
-        using namespace services;
-
-        auto lock = LockMutex();
-
-        DIRegisteredServices diServices = m_RegisteredServices;
-        diServices.Merge(m_ScopedServiceBuilders.BuildDIServices());
-
-        return DIContainerScope(std::move(diServices), m_Mutex);
-    }
 } // sol::di

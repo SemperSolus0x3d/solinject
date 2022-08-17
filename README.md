@@ -104,7 +104,7 @@ The `GetRequiredService<>()` method will throw `sol::di::exceptions::ServiceNotR
 If you want to use scoped services, then create a scope:
 
 ```c++
-sol::di::DIContainerScope scope = container.CreateScope();
+sol::di::DIContainer scope = container.CreateScope();
 ```
 
 and resolve your services from this scope just like you would from a container:
@@ -119,7 +119,7 @@ std::vector<std::shared_ptr<MyServiceClass>> myServices1 = scope.template GetSer
 std::vector<std::shared_ptr<IMyServiceInterface>> myServices2 = scope.template GetServices<IMyServiceInterface>();
 ```
 
-`sol::di::DIContainerScope` can do everything a regular `sol::di::DIContainer` can do. You can register services to it (even scoped services), resolve services from it etc. You can even create a scope from a scope, and then create a scope from that scope and so on.
+A scope container can do everything a regular `sol::di::DIContainer` can do. You can register services to it (even scoped services), resolve services from it etc. You can even create a scope from a scope, and then create a scope from that scope and so on.
 
 ## How to link it to your project
 
