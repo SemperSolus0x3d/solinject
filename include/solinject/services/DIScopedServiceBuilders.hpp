@@ -18,6 +18,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file
+
 #pragma once
 
 #include <map>
@@ -34,26 +36,51 @@
 
 namespace sol::di::services
 {
+    /// Scoped DI service builders collection
     class DIScopedServiceBuilders
     {
     public:
+        /**
+         * @copydoc IDIServiceTyped<T>::Factory
+         * @tparam T service type
+         */
         template <class T>
         using Factory = typename IDIServiceTyped<T>::Factory;
 
+        /**
+         * @copydoc IDIServiceTyped<T>::ServicePtr
+         * @tparam T service type
+         */
         template <class T>
         using ServicePtr = typename IDIServiceTyped<T>::ServicePtr;
 
+        /// Pointer to a @ref IDIService instance
         using DIServicePtr = std::shared_ptr<IDIService>;
+
+        /// Pointer to a @ref IDIScopedServiceBuilder instance
         using DIScopedServiceBuilderPtr = std::shared_ptr<IDIScopedServiceBuilder>;
+        
+        /// Map of registered DI services
         using RegisteredServicesMap = std::map<std::type_index, std::vector<DIServicePtr>>;
+
+        /// Map of registered DI service builders
         using RegisteredServiceBuildersMap = std::map<std::type_index, std::vector<DIScopedServiceBuilderPtr>>;
 
+        /**
+         * @brief Registers a scoped service
+         * @tparam T service type
+         * @param factory factory function
+         */
         template<class T>
         void RegisterScopedService(const Factory<T> factory)
         {
             m_RegisteredServiceBuilders[std::type_index(typeid(T))].push_back(std::make_shared<DIScopedServiceBuilder<T>>(factory));
         }
 
+        /**
+         * @brief Builds DI services
+         * @returns registered services map
+         */
         RegisteredServicesMap BuildDIServices() const
         {
             RegisteredServicesMap result;
@@ -82,6 +109,7 @@ namespace sol::di::services
         }
 
     private:
+        /// Registered service builders
         RegisteredServiceBuildersMap m_RegisteredServiceBuilders;
     };
 }

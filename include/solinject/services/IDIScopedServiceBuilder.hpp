@@ -18,18 +18,26 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file
+
 #pragma once
 #include "DIScopedService.hpp"
 
 namespace sol::di::services
 {
+    /// Type-erased interface for DI service builders
     class IDIScopedServiceBuilder
     {
     public:
+        /// Pointer to an @ref IDIService instance
         using DIServicePtr = std::shared_ptr<IDIService>;
 
         virtual ~IDIScopedServiceBuilder() {}
 
+        /**
+         * @brief Builds a DI service instance
+         * @returns pointer to the DI service instance
+         */
         virtual DIServicePtr BuildDIService() const = 0;
     };
 }

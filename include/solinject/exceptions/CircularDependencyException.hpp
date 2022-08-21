@@ -18,17 +18,24 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file
+
 #pragma once
 #include <typeinfo>
 #include "DIException.hpp"
 
 namespace sol::di::exceptions
 {
+    /// Exception that is thrown when a circular dependency is detected
     class CircularDependencyException : public DIException
     {
     public:
+        /**
+         * @brief Constructor
+         * @param type type that depends on itself
+         */
         CircularDependencyException(const std::type_info& type) : DIException(
-            std::string("Circular dependency detected. Type used twice: ") + type.name()
+            std::string("Circular dependency detected. Type that depends on itself: ") + type.name()
         )
         {
         }

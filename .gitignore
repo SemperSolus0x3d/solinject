@@ -2,6 +2,7 @@
 
 /build*
 /install*
+/docs/output/**
 
 !scripts/**
 

@@ -18,26 +18,41 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file
+
 #pragma once
 #include "solinject/Defines.hpp"
 #include "DIServiceBase.hpp"
 
 namespace sol::di::services
 {
+    /**
+     * @brief Shared DI service
+     * @tparam T service type
+     */
     template<class T>
     class DISharedService : public DIServiceBase<T>
     {
     public:
+        /// Base of the @ref DISharedService class
         using Base = DIServiceBase<T>;
+
+        /// @copydoc DIServiceBase<T>::Container
         using Container = typename Base::Container;
+
+        /// @copydoc DIServiceBase<T>::ServicePtr
         using ServicePtr = typename Base::ServicePtr;
+
+        /// @copydoc DIServiceBase<T>::Factory
         using Factory = typename Base::Factory;
+
+        /// @ref std::weak_ptr to a service instance
         using ServiceWeakPtr = std::weak_ptr<T>;
 
-        DISharedService(ServicePtr service) : m_ServicePtr(service)
-        {
-        }
-
+        /**
+         * @brief Constructor
+         * @param factory the factory function
+         */
         DISharedService(const Factory factory) : m_Factory(factory), m_ServicePtr()
         {
         }
@@ -63,7 +78,10 @@ namespace sol::di::services
         }
 
     private:
+        /// Pointer to the service instance
         ServiceWeakPtr m_ServicePtr;
+
+        /// Factory function
         Factory m_Factory;
     }; // class DISharedService
 } // sol::di::services
