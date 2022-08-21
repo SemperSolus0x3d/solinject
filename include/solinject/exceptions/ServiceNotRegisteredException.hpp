@@ -18,15 +18,22 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file
+
 #pragma once
 #include <typeinfo>
 #include "DIException.hpp"
 
 namespace sol::di::exceptions
 {
+    /// Exception that is thrown when the requested service is not registered
     class ServiceNotRegisteredException : public DIException
     {
     public:
+        /**
+         * @brief Constructor
+         * @param type type that is not registered
+         */
         ServiceNotRegisteredException(const std::type_info& type) : DIException(
             std::string("Service was not registered. Service type: ") + type.name()
         )

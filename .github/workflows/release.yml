@@ -12,27 +12,29 @@ jobs:
       upload-url: ${{ steps.create-release.outputs.upload_url }}
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
+    - name: Checkout repo
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
 
-      - name: Configure Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.10
+    - name: Configure Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
 
-      - name: Get Version
-        id: get-version
-        working-directory: ${{github.workspace}}
-        run: scripts/workflows/GetVersion.py
+    - name: Get Version
+      id: get-version
+      working-directory: ${{github.workspace}}
+      run: scripts/workflows/GetVersion.py
 
-      - name: Create Release
-        id: create-release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        with:
-          tag_name: v${{ steps.get-version.outputs.version }}
-          release_name: Release v${{ steps.get-version.outputs.version }}
+    - name: Create Release
+      id: create-release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      with:
+        tag_name: v${{ steps.get-version.outputs.version }}
+        release_name: Release v${{ steps.get-version.outputs.version }}
 
   upload-windows-asset:
     name: Upload Windows Asset
@@ -40,58 +42,66 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v2
-        with:
-          python-version: 3.10
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
 
-      - name: Build Asset
-        working-directory: ${{github.workspace}}
-        run: scripts/BuildForAllPlatformsVS.py
+    - name: Build Asset
+      working-directory: ${{github.workspace}}
+      run: scripts/BuildForAllPlatformsVS.py
 
-      - name: Compress files
-        uses: vimtor/action-zip@v1
-        with:
-          files: install/all-platforms/
-          dest: solinject-v${{ jobs.create-release.version }}-win.zip
+    - name: Compress files
+      uses: vimtor/action-zip@v1
+      with:
+        files: install/all-platforms/
+        dest: solinject-v${{ jobs.create-release.version }}-win.zip
 
-      - name: Upload Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        with:
-          upload_url: ${{ jobs.create-release.outputs.upload-url }}
-          asset_path: solinject-v${{ jobs.create-release.version }}-win.zip
-          asset_name: solinject-v${{ jobs.create-release.version }}-win.zip
-          asset_content_type: application/zip
-        
+    - name: Upload Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      with:
+        upload_url: ${{ jobs.create-release.outputs.upload-url }}
+        asset_path: solinject-v${{ jobs.create-release.version }}-win.zip
+        asset_name: solinject-v${{ jobs.create-release.version }}-win.zip
+        asset_content_type: application/zip
+
   upload-linux-asset:
     name: Upload Linux Asset
     needs: create-release
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v2
-        with:
-          python-version: 3.10
+    - name: Install Doxygen
+      run: sudo apt-get install doxygen -y
+      shell: bash
 
-      - name: Build Asset
-        working-directory: ${{github.workspace}}
-        run: scripts/BuildForAllPlatformsUnixMakefiles.py
+    - name: Install Graphviz
+      run: sudo apt-get install graphviz -y
+      shell: bash
 
-      - name: Compress files
-        uses: vimtor/action-zip@v1
-        with:
-          files: install/all-platforms/
-          dest: solinject-v${{ jobs.create-release.version }}-linux.zip
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
 
-      - name: Upload Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        with:
-          upload_url: ${{ jobs.create-release.outputs.upload-url }}
-          asset_path: solinject-v${{ jobs.create-release.version }}-linux.zip
-          asset_name: solinject-v${{ jobs.create-release.version }}-linux.zip
-          asset_content_type: application/zip
+    - name: Build Asset
+      working-directory: ${{github.workspace}}
+      run: scripts/BuildForAllPlatformsUnixMakefiles.py
+
+    - name: Compress files
+      uses: vimtor/action-zip@v1
+      with:
+        files: install/all-platforms/
+        dest: solinject-v${{ jobs.create-release.version }}-linux.zip
+
+    - name: Upload Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      with:
+        upload_url: ${{ jobs.create-release.outputs.upload-url }}
+        asset_path: solinject-v${{ jobs.create-release.version }}-linux.zip
+        asset_name: solinject-v${{ jobs.create-release.version }}-linux.zip
+        asset_content_type: application/zip

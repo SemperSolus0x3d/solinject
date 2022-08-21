@@ -9,7 +9,7 @@ C++17 Dependency Injection header-only library
 
 ## Features
 
-- Supports singleton[^singleton-service], transient[^transient-service], shared[^shared-service] and scoped[^scoped-service] services.
+- Supports singleton[^1], transient[^2], shared[^3] and scoped[^4] services.
 - Supports registering multiple services of the same type or multiple implementations of the same interface and resolving them all at once.
 - Threadsafe (can be disabled if your program is single-threaded).
 - Has runtime circular dependency checks.
@@ -19,11 +19,19 @@ C++17 Dependency Injection header-only library
 - All configuration is tied to the container.
 - Container is mutable by default, but it will be immutable if you use it by a reference to const or by a pointer to const.
 
+[^1]: A singleton service is created once and used everywhere.
+
+[^2]: A transient service is created each time it is requested.
+
+[^3]: A shared service exists while it is used. When the shared service is requested, if an instance already exists, that instance is returned; otherwise a new instance is created.
+
+[^4]: A scoped service behaves like a singleton inside its scope and derived scopes.
+
 ## How to use it
 
-### `#include` it
+### Include it
 
-```c++
+```cpp
 #define SOLINJECT_NOTHREADSAFE // If your program is single-threaded
 #include <solinject.hpp>
 #include <solinject-macros.hpp>
@@ -33,13 +41,13 @@ C++17 Dependency Injection header-only library
 
 ### Create a container
 
-```c++
+```cpp
 sol::di::DIContainer container;
 ```
 
 ### Register a service
 
-```c++
+```cpp
 RegisterSingletonService(container, MyServiceClass/*, constructor params go here */);
 // or
 RegisterSingletonInterface(container, IMyServiceInterface, MyServiceClass/*, constructor params go here */);
@@ -47,7 +55,7 @@ RegisterSingletonInterface(container, IMyServiceInterface, MyServiceClass/*, con
 
 If your service has constructor parameters, that should be injected from the container, use the `FROM_DI()` macro, the `FROM_DI_OPTIONAL()` macro or the `FROM_DI_MULTIPLE()` macro:
 
-```c++
+```cpp
 RegisterSingletonService(container, MyServiceClass, FROM_DI(MyOtherServiceClass));
 // or
 RegisterSingletonInterface(container, IMyServiceInterface, MyServiceClass, FROM_DI(MyOtherServiceClass));
@@ -55,11 +63,14 @@ RegisterSingletonInterface(container, IMyServiceInterface, MyServiceClass, FROM_
 
 The `FROM_DI()` and `FROM_DI_OPTIONAL()` macros inject a single instance of the service as `std::shared_ptr<T>`, while the `FROM_DI_MULTIPLE()` macro injects multiple instances of the service or multiple implementations of the interface as `std::vector<std::shared_ptr<T>>`.
 
-The `FROM_DI_OPTIONAL()` macro should be used when the injected service is *optional*. *Optional* here means that a service **may** or **may not** be registered and it **doesn't** mean that a service may be registered with a nullptr or a factory method that returns nullptr.
+The `FROM_DI_OPTIONAL()` macro should be used when the injected service is *optional*.
+
+> **Warning**
+> *Optional* here means that the service **may** or **may not** be registered and it **doesn't** mean that the service may be registered with `nullptr` or a factory function that returns `nullptr`.
 
 If you have a [`std::shared_ptr<>`](https://en.cppreference.com/w/cpp/memory/shared_ptr) or a [`std::unique_ptr<>`](https://en.cppreference.com/w/cpp/memory/unique_ptr) to an instance of the service, you can register it as a singleton:
 
-```c++
+```cpp
 auto instance1 = std::make_shared<MyServiceClass>();
 auto instance2 = std::make_unique<MyOtherServiceClass>();
 
@@ -69,7 +80,7 @@ container.template RegisterSingletonService<MyOtherServiceClass>(std::move(insta
 
 If for some reason you want to go the hard way, you can register the service directly using a lambda expression:
 
-```c++
+```cpp
 container.template RegisterSingletonService<MyServiceClass>([](const auto& container)
 {
     return std::make_shared<MyServiceClass>(
@@ -87,7 +98,7 @@ container.template RegisterSingletonService<IMyServiceInterface>([](const auto& 
 
 ### Get the service from the container
 
-```c++
+```cpp
 // For a single instance:
 std::shared_ptr<MyServiceClass> myService = container.template GetRequiredService<MyServiceClass>();
 // or
@@ -103,13 +114,13 @@ The `GetRequiredService<>()` method will throw `sol::di::exceptions::ServiceNotR
 
 If you want to use scoped services, then create a scope:
 
-```c++
+```cpp
 sol::di::DIContainer scope = container.CreateScope();
 ```
 
 and resolve your services from this scope just like you would from a container:
 
-```c++
+```cpp
 std::shared_ptr<MyServiceClass> myService1 = scope.template GetRequiredService<MyServiceClass>();
 
 std::shared_ptr<IMyServiceInterface> myService2 = scope.template GetRequiredService<IMyServiceInterface>();
@@ -125,77 +136,77 @@ A scope container can do everything a regular `sol::di::DIContainer` can do. You
 
 There are a few ways to link solinject to your project. Here's an incomplete list of them (the most recommended first):
 
-- ### CMake FetchContent
+### CMake FetchContent
 
-    Add these lines to your top-level `CMakeLists.txt`, replacing `v1.0.0` with your preferred version:
+Add these lines to your top-level `CMakeLists.txt`, replacing `v1.0.0` with your preferred version:
 
-    ```cmake
-    include(FetchContent)
+```cmake
+include(FetchContent)
 
-    FetchContent_Declare(
-        solinject
-        GIT_REPOSITORY https://github.com/SemperSolus0x3d/solinject
-        GIT_TAG v1.0.0
-    )
+FetchContent_Declare(
+    solinject
+    GIT_REPOSITORY https://github.com/SemperSolus0x3d/solinject
+    GIT_TAG v1.0.0
+)
 
-    FetchContent_MakeAvailable(solinject)
-    ```
+FetchContent_MakeAvailable(solinject)
+```
 
-    And then link the `sol::solinject` target to your project's target:
+And then link the `sol::solinject` target to your project's target:
 
-    ```cmake
-    target_link_libraries(YOUR_TARGET sol::solinject)
-    ```
+```cmake
+target_link_libraries(YOUR_TARGET sol::solinject)
+```
 
-- ### Git Submodule
+### Git Submodule
 
-    In your project folder run:
+In your project folder run:
 
-    ```bash
-    mkdir extern
-    git submodule add "https://github.com/SemperSolus0x3d/solinject" extern/solinject
-    cd extern/solinject
-    git checkout v1.0.0
-    cd ../..
-    ```
+```bash
+mkdir extern
+git submodule add "https://github.com/SemperSolus0x3d/solinject" extern/solinject
+cd extern/solinject
+git checkout v1.0.0
+cd ../..
+```
 
-    Then in your top-level `CMakeLists.txt` add this submodule as subdirectory and link `sol::solinject` to your project's target:
+Then in your top-level `CMakeLists.txt` add this submodule as subdirectory and link `sol::solinject` to your project's target:
 
-    ```cmake
-    add_subdirectory(extern/solinject)
-    target_link_libraries(YOUR_TARGET sol::solinject)
-    ```
+```cmake
+add_subdirectory(extern/solinject)
+target_link_libraries(YOUR_TARGET sol::solinject)
+```
 
-- ### CMake find_package()
+### CMake find_package()
 
-    [Build](#how-to-build-it) or download the [latest release](https://github.com/SemperSolus0x3d/solinject/releases/latest), install it to your CMake packages installation prefix and link it to your project's target:
+[Build](#how-to-build-it) or download the [latest release](https://github.com/SemperSolus0x3d/solinject/releases/latest), install it to your CMake packages installation prefix and link it to your project's target:
 
-    ```cmake
-    find_package(solinject VERSION 1.0.0 REQUIRED)
-    target_link_libraries(YOUR_TARGET sol::solinject)
-    ```
+```cmake
+find_package(solinject VERSION 1.0.0 REQUIRED)
+target_link_libraries(YOUR_TARGET sol::solinject)
+```
 
-- ### Add as subdirectory
+### Add as subdirectory
 
-    Download the [latest release](https://github.com/SemperSolus0x3d/solinject/releases/latest) source code, extract it to your project's directory for dependencies (in my example it's `lib`) and add it to your project as subdirectory:
+Download the [latest release](https://github.com/SemperSolus0x3d/solinject/releases/latest) source code, extract it to your project's directory for dependencies (in my example it's `lib`) and add it to your project as subdirectory:
 
-    ```cmake
-    add_subdirectory(lib/solinject)
-    target_link_libraries(YOUR_TARGET sol::solinject)
-    ```
+```cmake
+add_subdirectory(lib/solinject)
+target_link_libraries(YOUR_TARGET sol::solinject)
+```
 
-- ### Copy-paste
+### Copy-paste
 
-    solinject is a header-only library, so you can just copy everything from this project's `include` directory and paste it into your project's `include` directory. Make sure to add the folder containing `solinject.hpp` and `solinject-macros.hpp` to your compiler include directories.
+solinject is a header-only library, so you can just copy everything from this project's `include` directory and paste it into your project's `include` directory. Make sure to add the folder containing `solinject.hpp` and `solinject-macros.hpp` to your compiler include directories.
 
 ## How to build it
 
-solinject is a header-only library, so building it is needed only to build tests and install a cmake package, which then can be linked with `find_package()`.
+solinject is a header-only library, so building it is needed only to build tests and docs and install a cmake package, which then can be linked with `find_package()`.
 
 Clone the repository and `cd` into it:
 
 ```bash
-git clone https://github.com/SemperSolus0x3d/solinject/
+git clone --recurse-submodules https://github.com/SemperSolus0x3d/solinject/
 cd solinject
 ```
 
@@ -236,11 +247,3 @@ This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU Lesser General Public License for more details.
-
-[^singleton-service]: A singleton service is created once and used everywhere.
-
-[^transient-service]: A transient service is created each time it is requested.
-
-[^shared-service]: A shared service exists while it is used. When a shared service is requested, if an instance already exists, that instance is returned; otherwise a new instance is created.
-
-[^scoped-service]: A scoped service behaves like a singleton inside its scope and derived scopes.

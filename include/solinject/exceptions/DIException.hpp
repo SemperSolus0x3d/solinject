@@ -18,20 +18,31 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file
+
 #pragma once
 #include <stdexcept>
 #include <string>
 
 namespace sol::di::exceptions
 {
+    /// Base class for solinject exceptions
     class DIException : public std::logic_error
     {
     public:
+        /**
+         * @brief Constructor
+         * @param message error message
+         */
         DIException(const char* message) :
             std::logic_error(message)
         {
         }
 
+        /**
+         * @brief Constructor
+         * @param message error message
+         */
         DIException(const std::string& message) :
             std::logic_error(message)
         {

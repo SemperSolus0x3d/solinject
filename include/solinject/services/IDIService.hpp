@@ -18,10 +18,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file
+
 #pragma once
 
 namespace sol::di::services
 {
+    /// Type-erased DI service interface
     class IDIService
     {
     public:

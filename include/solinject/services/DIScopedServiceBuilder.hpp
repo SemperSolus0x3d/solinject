@@ -18,20 +18,37 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file
+
 #pragma once
 #include "IDIScopedServiceBuilder.hpp"
 
 namespace sol::di::services
 {
+    /**
+     * @brief Builder for scoped DI services
+     * @tparam T service type
+     */
     template<class T>
     class DIScopedServiceBuilder : public IDIScopedServiceBuilder
     {
     public:
+        /// Base for the @ref DIScopedServiceBuilder class
         using Base = IDIScopedServiceBuilder;
+
+        /// Type of the DI service that is being built
         using DIService = DIScopedService<T>;
+        
+        /// @copydoc IDIScopedServiceBuilder::DIServicePtr
         using AbstractDIServicePtr = typename Base::DIServicePtr;
+
+        /// @copydoc DIScopedService<T>::Factory
         using Factory = typename DIService::Factory;
 
+        /**
+         * @brief Constructor
+         * @param factory factory function
+         */
         DIScopedServiceBuilder(Factory factory) : m_Factory(factory)
         {
         }
@@ -41,6 +58,7 @@ namespace sol::di::services
             return std::make_shared<DIService>(m_Factory);
         }
     private:
+        /// Factory function
         Factory m_Factory;
     };
 }

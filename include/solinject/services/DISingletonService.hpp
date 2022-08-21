@@ -18,25 +18,46 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file
+
 #pragma once
 #include "solinject/Defines.hpp"
 #include "DIServiceBase.hpp"
 
 namespace sol::di::services
 {
+    /**
+     * @brief Singleton DI service
+     * @tparam T service type
+     */
     template<class T>
     class DISingletonService : public DIServiceBase<T>
     {
     public:
+        /// Base of the @ref DISingletonService class
         using Base = DIServiceBase<T>;
+
+        /// @copydoc DIServiceBase<T>::Container
         using Container = typename Base::Container;
+
+        /// @copydoc DIServiceBase<T>::ServicePtr
         using ServicePtr = typename Base::ServicePtr;
+
+        /// @copydoc DIServiceBase<T>::Factory
         using Factory = typename Base::Factory;
 
+        /**
+         * @brief Constructor
+         * @param service pointer to a service instance
+         */
         DISingletonService(ServicePtr service) : m_ServicePtr(service)
         {
         }
 
+        /**
+         * @brief Constructor
+         * @param factory factory function
+         */
         DISingletonService(const Factory factory) : m_Factory(factory), m_ServicePtr(nullptr)
         {
         }
@@ -56,7 +77,10 @@ namespace sol::di::services
         }
 
     private:
+        /// Pointer to the service instance
         ServicePtr m_ServicePtr;
+
+        /// Factory function
         Factory m_Factory;
     }; // class DISingletonService
 } // sol::di::services

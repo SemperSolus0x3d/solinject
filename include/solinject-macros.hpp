@@ -18,6 +18,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/** @file
+ * @brief Header file, which provides some
+ * handy macros for registering services.
+ */
+
 #pragma once
 
 #include "solinject/DIMacros.hpp"

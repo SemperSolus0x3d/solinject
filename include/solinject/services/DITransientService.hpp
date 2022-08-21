@@ -18,21 +18,38 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file
+
 #pragma once
 #include "solinject/Defines.hpp"
 #include "DIServiceBase.hpp"
 
 namespace sol::di::services
 {
+    /**
+     * @brief Transient DI service
+     * @tparam T service type
+     */
     template<class T>
     class DITransientService : public DIServiceBase<T>
     {
     public:
+        /// Base of the @ref DITransientService class
         using Base = DIServiceBase<T>;
+
+        /// @copydoc DIServiceBase<T>::Container
         using Container = typename Base::Container;
+
+        /// @copydoc DIServiceBase<T>::ServicePtr
         using ServicePtr = typename Base::ServicePtr;
+
+        /// @copydoc DIServiceBase<T>::Factory
         using Factory = typename Base::Factory;
 
+        /**
+         * @brief Constructor
+         * @param factory factory function
+         */
         DITransientService(const Factory factory) : m_Factory(factory)
         {
         }
@@ -48,6 +65,7 @@ namespace sol::di::services
         }
 
     private:
+        /// Factory function
         Factory m_Factory;
     }; // class DITransientService
 } // sol::di::services

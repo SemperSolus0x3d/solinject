@@ -21,6 +21,8 @@ cmake_minimum_required(VERSION 3.21)
 
 project(solinject VERSION 1.0.0 LANGUAGES CXX)
 
+option(BUILD_DOC "Generate documentation" ON)
+
 set(PROJECT_NAMESPACE sol::)
 
 include(GNUInstallDirs)
@@ -41,6 +43,31 @@ target_include_directories(
 if(BUILD_TESTING AND PROJECT_IS_TOP_LEVEL)
     enable_testing()
     add_subdirectory(test)
+endif()
+
+if(BUILD_DOC AND PROJECT_IS_TOP_LEVEL)
+    find_package(Doxygen COMPONENTS dot)
+
+    if(DOXYGEN_FOUND)
+
+        if (Doxygen_dot_FOUND)
+            set(DOXYGEN_HAVE_DOT YES)
+        else()
+            set(DOXYGEN_HAVE_DOT NO)
+        endif()
+
+        set(DOXYFILE_IN "${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile.in")
+        set(DOXYFILE_OUT "${CMAKE_CURRENT_BINARY_DIR}/Doxyfile")
+
+        configure_file("${DOXYFILE_IN}" "${DOXYFILE_OUT}" @ONLY)
+
+        add_custom_target(docs ALL
+            COMMENT "Generating docs"
+            COMMAND "${DOXYGEN_EXECUTABLE}" "${DOXYFILE_OUT}"
+            WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+        )
+
+    endif()
 endif()
 
 if (PROJECT_IS_TOP_LEVEL)
@@ -68,6 +95,14 @@ if (PROJECT_IS_TOP_LEVEL)
         DIRECTORY include/
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
     )
+
+    # Install docs
+    if(BUILD_DOC)
+        install(
+            DIRECTORY docs/output/
+            DESTINATION "${CMAKE_INSTALL_DOCDIR}"
+        )
+    endif()
 
     # Install package version file
     install(

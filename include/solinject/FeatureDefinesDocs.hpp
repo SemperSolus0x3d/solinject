@@ -18,24 +18,28 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-/// @file
+/** @file
+ * @brief File, which contains documentation for
+ * feature-controlling defines.
+ * 
+ * This file contains documentation for macros,
+ * which may be `#define`d by user code to enable or
+ * disable some solinject's features (e.g. thread safety).
+ */
 
-#pragma once
-#include <assert.h>
+#ifdef DOXYGEN
+/**
+ * @brief Macro, which, when defined, indicates that solinject
+ * is being linked to a single-threaded program and, therefore,
+ * its thread safety measures, such as mutex locks, may be disabled
+ * for performance reasons.
+ */
+#define SOLINJECT_NOTHREADSAFE
 
 /**
- * @def solinject_assert(expression)
- * @brief `assert()` macro, which is disabled in tests project.
+ * @brief Macro, which, when defined, indicates that solinject
+ * is being linked to a tests project.
+ * @warning This macro is intended for internal use only.
  */
-
-#ifdef SOLINJECT_TESTING
-    #define solinject_assert(expression) ((void)0)
-#else
-    #define solinject_assert(expression) assert(expression)
+#define SOLINJECT_TESTING
 #endif
-
-/** 
- * @brief Required assert, which is disabled 
- * only when the `assert()` macro from `assert.h` is disabled
- */
-#define solinject_req_assert(expression) assert(expression)

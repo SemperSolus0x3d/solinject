@@ -18,18 +18,31 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file
+
 #pragma once
 #include "DISingletonService.hpp"
 
 namespace sol::di::services
 {
+    /**
+     * @brief Scoped DI service
+     * @tparam T service type
+     */
     template<class T>
     class DIScopedService : public DISingletonService<T>
     {
     public:
+        /// Base of the @ref DIScopedService class
         using Base = DISingletonService<T>;
+
+        /// @copydoc DISingletonService<T>::Factory
         using Factory = typename Base::Factory;
 
+        /**
+         * @brief Constructor
+         * @param factory factory function
+         */
         DIScopedService(const Factory factory) : Base(factory)
         {
         }
