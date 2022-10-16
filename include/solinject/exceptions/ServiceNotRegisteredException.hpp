@@ -24,7 +24,7 @@
 #include <typeinfo>
 #include "DIException.hpp"
 
-namespace sol::di::exceptions
+namespace sol::di::exc
 {
     /// Exception that is thrown when the requested service is not registered
     class ServiceNotRegisteredException : public DIException

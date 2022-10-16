@@ -49,6 +49,24 @@ namespace sol::di::test
         TestD(std::shared_ptr<TestC> c) {}
     };
 
+    class TestD2 : public ITestD
+    {
+    public:
+        TestD2(std::shared_ptr<TestB> b) {}
+    };
+
+    class ITestD2 : public ITestD
+    {
+    public:
+        virtual ~ITestD2() {}
+    };
+
+    class TestD3 : public ITestD2
+    {
+    public:
+        TestD3() {}
+    };
+
     class TestE
     {
     public:
@@ -65,6 +83,12 @@ namespace sol::di::test
     {
     public:
         TestG(std::vector<std::shared_ptr<TestF>> fs) {}
+    };
+
+    class TestH
+    {
+    public:
+        TestH(std::vector<std::shared_ptr<ITestD>> ds) {}
     };
 
     class SameInstanceTestClass

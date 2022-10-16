@@ -18,6 +18,7 @@ C++17 Dependency Injection header-only library
 - Your services don't have to know about their dependencies' lifetime.
 - All configuration is tied to the container.
 - Container is mutable by default, but it will be immutable if you use it by a reference to const or by a pointer to const.
+- Container can be configured in code or by a config file
 
 [^1]: A singleton service is created once and used everywhere.
 
@@ -37,12 +38,12 @@ C++17 Dependency Injection header-only library
 #include <solinject-macros.hpp>
 ```
 
-`solinject.hpp` contains the `sol::di::DIContainer` class, and `solinject-macros.hpp` provides you some handy macros for registering services.
+`solinject.hpp` contains the `sol::di::Container` class, and `solinject-macros.hpp` provides you some handy macros for registering services.
 
 ### Create a container
 
 ```cpp
-sol::di::DIContainer container;
+sol::di::Container container;
 ```
 
 ### Register a service
@@ -110,12 +111,12 @@ std::vector<std::shared_ptr<MyServiceClass>> myServices = container.template Get
 std::vector<std::shared_ptr<IMyServiceInterface>> myServices = container.template GetServices<IMyServiceInterface>();
 ```
 
-The `GetRequiredService<>()` method will throw `sol::di::exceptions::ServiceNotRegisteredException` if the requested service is not registered. If you prefer to get an empty [`std::shared_ptr<>`](https://en.cppreference.com/w/cpp/memory/shared_ptr) in such cases, use the `GetService<>()` method.
+The `GetRequiredService<>()` method will throw `sol::di::exc::ServiceNotRegisteredException` if the requested service is not registered. If you prefer to get an empty [`std::shared_ptr<>`](https://en.cppreference.com/w/cpp/memory/shared_ptr) in such cases, use the `GetService<>()` method.
 
 If you want to use scoped services, then create a scope:
 
 ```cpp
-sol::di::DIContainer scope = container.CreateScope();
+sol::di::Container scope = container.CreateScope();
 ```
 
 and resolve your services from this scope just like you would from a container:
@@ -130,7 +131,72 @@ std::vector<std::shared_ptr<MyServiceClass>> myServices1 = scope.template GetSer
 std::vector<std::shared_ptr<IMyServiceInterface>> myServices2 = scope.template GetServices<IMyServiceInterface>();
 ```
 
-A scope container can do everything a regular `sol::di::DIContainer` can do. You can register services to it (even scoped services), resolve services from it etc. You can even create a scope from a scope, and then create a scope from that scope and so on.
+A scope container can do everything a regular `sol::di::Container` can do. You can register services to it (even scoped services), resolve services from it etc. You can even create a scope from a scope, and then create a scope from that scope and so on.
+
+### Configuring via config file
+
+If you want to use config files for configuring services, then registration looks a bit different:
+
+```cpp
+// Create a builder
+sol::di::ContainerBuilder builder;
+
+// Register services
+builder.RegisterService<MyServiceClass>(
+    "MyServiceClass", 
+    FACTORY(MyServiceClass/*, constructor params go here*/)
+);
+
+builder.RegisterInterface<MyServiceInterface>("MyServiceInterface");
+builder.RegisterService<MyServiceImpl, MyServiceInterface>(
+    "MyServiceImpl", 
+    FACTORY(MyServiceImpl/*, constructor params go here*/)
+);
+
+builder.RegisterInterface<MyInterface>("MyInterface");
+builder.RegisterService<MyImpl, MyInterface>(
+    "MyImpl", 
+    FACTORY(MyImpl/*, constructor params go here*/)
+);
+builder.RegisterService<MyOtherImpl, MyInterface>(
+    "MyOtherImpl", 
+    FACTORY(MyOtherImpl/*, constructor params go here*/)
+);
+
+// Open a config file
+std::ifstream configFile("MyConfigFile.txt", std::ios::in | std::ios::binary);
+
+// Read configuration from the file
+sol::di::Configuration config;
+configFile >> config;
+
+// Build container
+sol::di::Container container = builder.BuildContainer(config);
+
+// Then resolve your services as usual
+```
+
+Config file syntax example:
+
+```
+# One-line comment
+
+# Register MyServiceClass as self
+# with singleton lifetime
+MyServiceClass Self Singleton
+
+# Register MyServiceImpl class as MyServiceInterface
+# with transient lifetime
+MyServiceInterface MyServiceImpl Transient
+
+# Register MyImpl and MyOtherImpl
+# as implementations of MyInterface
+# with singleton and shared lifetimes
+MyInterface {
+    MyImpl Singleton
+    MyOtherImpl Shared
+}
+```
 
 ## How to link it to your project
 

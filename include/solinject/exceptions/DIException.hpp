@@ -24,7 +24,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace sol::di::exceptions
+namespace sol::di::exc
 {
     /// Base class for solinject exceptions
     class DIException : public std::logic_error

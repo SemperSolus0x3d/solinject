@@ -22,9 +22,10 @@
 
 #pragma once
 #include <mutex>
+#include <vector>
 #include <type_traits>
 
-namespace sol::di::utils
+namespace sol::di::impl
 {
     /// Empty class
     class Empty
@@ -42,6 +43,24 @@ namespace sol::di::utils
         template<class...TArgs>
         Empty(const TArgs&...args) {}
     };
+
+    /// @brief Adds elements of a vector to the end of the other vector
+    /// @tparam T the vector elements type
+    /// @param destination the vector, to which elements should be added
+    /// @param source the vector, whose elements should be added to @p destination
+    template<class T>
+    void ConcatenateVectors(std::vector<T>& destination, std::vector<T> source)
+    {
+        size_t newSize = destination.size() + source.size();
+
+        destination.reserve(newSize);
+
+        destination.insert(
+            destination.end(),
+            std::make_move_iterator(source.begin()),
+            std::make_move_iterator(source.end())
+        );
+    }
 
     /**
      * @brief Mutex, which can be discarded in compile-time

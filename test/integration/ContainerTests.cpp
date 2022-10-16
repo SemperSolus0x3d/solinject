@@ -51,7 +51,7 @@ void ItRegistersAndReturnsServices()
 {
     using namespace sol::di::test;
 
-    DIContainer container;
+    Container container;
 
     RegisterSingletonService(container, TestA);
     RegisterTransientService(container, TestB, FROM_DI(TestA));
@@ -84,7 +84,7 @@ void ItReturnsSameSingletonInstance()
 
     SameInstanceTestClass::ResetIds();
 
-    DIContainer container;
+    Container container;
 
     RegisterSingletonService(container, SameInstanceTestClass);
 
@@ -100,7 +100,7 @@ void ItRegistersSingletonByInstance()
 
     SameInstanceTestClass::ResetIds();
 
-    DIContainer container;
+    Container container;
 
     container.template RegisterSingletonService<SameInstanceTestClass>(
         std::make_shared<SameInstanceTestClass>(666)
@@ -117,7 +117,7 @@ void ItReturnsDifferentTransientInstances()
 
     SameInstanceTestClass::ResetIds();
 
-    DIContainer container;
+    Container container;
 
     RegisterTransientService(container, SameInstanceTestClass);
 
@@ -133,7 +133,7 @@ void ItReturnsSameSharedInstanceWhileItIsAlive()
 
     SameInstanceTestClass::ResetIds();
 
-    DIContainer container;
+    Container container;
 
     RegisterSharedService(container, SameInstanceTestClass);
 
@@ -158,7 +158,7 @@ void ItReturnsCorrectScopedServiceInstance()
 
     SameInstanceTestClass::ResetIds();
 
-    DIContainer container;
+    Container container;
 
     RegisterScopedService(container, SameInstanceTestClass);
 
@@ -180,7 +180,7 @@ void ItAllowsCreatingScopeOfAScope()
 
     SameInstanceTestClass::ResetIds();
 
-    DIContainer container;
+    Container container;
     RegisterScopedService(container, SameInstanceTestClass);
 
     auto scope1 = container.CreateScope();
@@ -200,7 +200,7 @@ void ItReturnsMultipleRegisteredServices()
 
     SameInstanceTestClass::ResetIds();
 
-    DIContainer container;
+    Container container;
 
     RegisterSingletonService(container, SameInstanceTestClass, 1);
     RegisterSingletonService(container, SameInstanceTestClass, 2);
@@ -219,7 +219,7 @@ void ItReturnsLastRegisteredService()
 
     SameInstanceTestClass::ResetIds();
 
-    DIContainer container;
+    Container container;
 
     RegisterSingletonService(container, SameInstanceTestClass, 1);
     RegisterSingletonService(container, SameInstanceTestClass, 2);
@@ -234,7 +234,7 @@ void ItHandlesMultithreadedAccessCorrectly()
 {
     using namespace sol::di::test;
 
-    DIContainer container;
+    Container container;
 
     std::vector<std::thread> threads;
 
@@ -278,9 +278,9 @@ void ItHandlesMultithreadedAccessCorrectly()
 void ItDetectsCircularDependency()
 {
     using namespace test;
-    using namespace exceptions;
+    using namespace exc;
 
-    DIContainer container;
+    Container container;
 
     RegisterSingletonService(
         container,

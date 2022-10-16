@@ -21,23 +21,38 @@
 /// @file
 
 #pragma once
-#include <typeinfo>
-#include "DIException.hpp"
+#include "SingletonService.hpp"
 
-namespace sol::di::exc
+namespace sol::di::impl
 {
-    /// Exception that is thrown when a circular dependency is detected
-    class CircularDependencyException : public DIException
+    /**
+     * @brief Scoped DI service
+     * @tparam T service type
+     */
+    template<class TService, class...TServiceParents>
+    class ScopedService :
+        public SingletonService<TService, TServiceParents...>
     {
+        static_assert(
+            std::conjunction_v<std::is_base_of<TServiceParents, TService>...>,
+            "The TServiceParents types must be derived from the TService type"
+        );
     public:
+        /// Base of the @ref ScopedService class
+        using Base = SingletonService<TService, TServiceParents...>;
+
+        /// @copydoc SingletonService<T>::Factory
+        using Factory = typename Base::Factory;
+
+        /// @copydoc sol::di::impl::IService::VoidPtr
+        using VoidPtr = typename IService::VoidPtr;
+
         /**
          * @brief Constructor
-         * @param type type that depends on itself
+         * @param factory factory function
          */
-        CircularDependencyException(const std::type_info& type) : DIException(
-            std::string("Circular dependency detected. Type that depends on itself: ") + type.name()
-        )
+        ScopedService(Factory factory) : Base(factory)
         {
         }
-    };
-}
+    }; // class SingletonService
+} // sol::di::impl

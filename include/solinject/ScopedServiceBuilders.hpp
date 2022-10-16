@@ -30,41 +30,41 @@
 #include <typeindex>
 #include <iterator>
 
-#include "IDIService.hpp"
-#include "IDIServiceTyped.hpp"
-#include "DIScopedServiceBuilder.hpp"
+#include "IService.hpp"
+#include "IServiceTyped.hpp"
+#include "ScopedServiceBuilder.hpp"
 
-namespace sol::di::services
+namespace sol::di::impl
 {
     /// Scoped DI service builders collection
-    class DIScopedServiceBuilders
+    class ScopedServiceBuilders
     {
     public:
         /**
-         * @copydoc IDIServiceTyped<T>::Factory
+         * @copydoc IServiceTyped<T>::Factory
          * @tparam T service type
          */
         template <class T>
-        using Factory = typename IDIServiceTyped<T>::Factory;
+        using Factory = typename IServiceTyped<T>::Factory;
 
         /**
-         * @copydoc IDIServiceTyped<T>::ServicePtr
+         * @copydoc IServiceTyped<T>::ServicePtr
          * @tparam T service type
          */
         template <class T>
-        using ServicePtr = typename IDIServiceTyped<T>::ServicePtr;
+        using ServicePtr = typename IServiceTyped<T>::ServicePtr;
 
-        /// Pointer to a @ref IDIService instance
-        using DIServicePtr = std::shared_ptr<IDIService>;
+        /// Pointer to a @ref IService instance
+        using DIServicePtr = std::shared_ptr<IService>;
 
-        /// Pointer to a @ref IDIScopedServiceBuilder instance
-        using DIScopedServiceBuilderPtr = std::shared_ptr<IDIScopedServiceBuilder>;
-        
+        /// Pointer to a scoped service builder
+        using ScopedServiceBuilderPtr = std::shared_ptr<IScopedServiceBuilder>;
+
         /// Map of registered DI services
         using RegisteredServicesMap = std::map<std::type_index, std::vector<DIServicePtr>>;
 
         /// Map of registered DI service builders
-        using RegisteredServiceBuildersMap = std::map<std::type_index, std::vector<DIScopedServiceBuilderPtr>>;
+        using RegisteredServiceBuildersMap = std::map<std::type_index, std::vector<ScopedServiceBuilderPtr>>;
 
         /**
          * @brief Registers a scoped service
@@ -72,9 +72,22 @@ namespace sol::di::services
          * @param factory factory function
          */
         template<class T>
-        void RegisterScopedService(const Factory<T> factory)
+        void RegisterScopedService(Factory<T> factory)
         {
-            m_RegisteredServiceBuilders[std::type_index(typeid(T))].push_back(std::make_shared<DIScopedServiceBuilder<T>>(factory));
+            RegisterScopedService(
+                std::type_index(typeid(T)),
+                std::make_shared<ScopedServiceBuilder<T>>(factory)
+            );
+        }
+
+        /**
+         * @brief Registers a scoped service
+         * @param type service type
+         * @param serviceBuilder service builder
+         */
+        void RegisterScopedService(std::type_index type, ScopedServiceBuilderPtr serviceBuilder)
+        {
+            m_RegisteredServiceBuilders[type].push_back(serviceBuilder);
         }
 
         /**

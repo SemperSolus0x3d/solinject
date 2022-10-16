@@ -42,4 +42,6 @@ macro(add_integration_test_executable name)
     message(STATUS "${name} integration test added")
 endmacro()
 
-add_integration_test_executable("DIContainerTests")
+add_integration_test_executable("ContainerTests")
+add_integration_test_executable("ConfigurationParserTests")
+add_integration_test_executable("ContainerBuilderTests")

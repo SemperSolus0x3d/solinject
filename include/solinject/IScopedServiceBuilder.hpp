@@ -21,15 +21,23 @@
 /// @file
 
 #pragma once
+#include "ScopedService.hpp"
 
-namespace sol::di::services
+namespace sol::di::impl
 {
-    /// Type-erased DI service interface
-    class IDIService
+    /// Type-erased interface for DI service builders
+    class IScopedServiceBuilder
     {
     public:
-        virtual ~IDIService() = 0;
-    };
+        /// Pointer to an @ref IService instance
+        using DIServicePtr = std::shared_ptr<IService>;
 
-    IDIService::~IDIService() {}
+        virtual ~IScopedServiceBuilder() {}
+
+        /**
+         * @brief Builds a DI service instance
+         * @returns pointer to the DI service instance
+         */
+        virtual DIServicePtr BuildDIService() const = 0;
+    };
 }

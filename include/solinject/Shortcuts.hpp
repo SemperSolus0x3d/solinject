@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: LGPL-3.0-or-later
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 /*
  * solinject - C++ Dependency Injection header-only library
@@ -18,26 +18,37 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-/// @file
+/** @file
+ * @brief This file provides handy shortcuts for reading
+ * configuration from string or file
+*/
 
 #pragma once
-#include "DIScopedService.hpp"
+#include <iostream>
+#include <array>
+#include "Configuration.hpp"
+#include "ConfigurationParser.hpp"
 
-namespace sol::di::services
+namespace sol::di
 {
-    /// Type-erased interface for DI service builders
-    class IDIScopedServiceBuilder
+    static std::string operator>>(std::string input, Configuration& config)
     {
-    public:
-        /// Pointer to an @ref IDIService instance
-        using DIServicePtr = std::shared_ptr<IDIService>;
+        config = ConfigurationParser().Parse(input);
+        return input;
+    }
 
-        virtual ~IDIScopedServiceBuilder() {}
+    static std::istream& operator>>(std::istream& stream, Configuration& config)
+    {
+        std::array<char, 4096> buffer;
+        std::string input;
 
-        /**
-         * @brief Builds a DI service instance
-         * @returns pointer to the DI service instance
-         */
-        virtual DIServicePtr BuildDIService() const = 0;
-    };
+        while(!stream.eof())
+        {
+            stream.read(buffer.data(), buffer.size());
+            input.append(buffer.data(), stream.gcount());
+        }
+
+        input >> config;
+        return stream;
+    }
 }

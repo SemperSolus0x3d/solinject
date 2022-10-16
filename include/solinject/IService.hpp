@@ -22,39 +22,28 @@
 
 #pragma once
 #include <memory>
-#include <functional>
 
-namespace sol::di { class DIContainer; }
+namespace sol::di { class Container; }
 
-namespace sol::di::services
+namespace sol::di::impl
 {
-    /// DI service interface
-    template <class T>
-    class IDIServiceTyped : public IDIService
+    /// Type-erased DI service interface
+    class IService
     {
     public:
         /// DI container
-        using Container = sol::di::DIContainer;
+        using Container = sol::di::Container;
 
-        /// Pointer to an instance of a service
-        using ServicePtr = typename std::shared_ptr<T>;
+        /// Pointer to void
+        using VoidPtr = std::shared_ptr<void>;
 
-        /**
-         * @brief Factory function that accepts a reference to 
-         * a DI container and returns a pointer to an instance of a service
-         */
-        using Factory = typename std::function<ServicePtr(const Container&)>;
-
-        virtual ~IDIServiceTyped() = 0;
+        virtual ~IService() {}
 
         /**
-         * @brief Resolves the service
-         * @param[in] container DI container
-         * @returns pointer to a service instance
+         * @brief Resolves a service
+         * @param container DI container
+         * @returns A service instance as @ref VoidPtr
          */
-        virtual ServicePtr GetService(const Container& container) = 0;
+        virtual VoidPtr GetServiceAsVoidPtr(const Container& container) = 0;
     };
-
-    template <class T>
-    IDIServiceTyped<T>::~IDIServiceTyped() {}
 }
