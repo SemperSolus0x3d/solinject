@@ -21,30 +21,36 @@
 /// @file
 
 #pragma once
-#include "DISingletonService.hpp"
+#include <memory>
+#include <functional>
+#include "IService.hpp"
 
-namespace sol::di::services
+namespace sol::di::impl
 {
-    /**
-     * @brief Scoped DI service
-     * @tparam T service type
-     */
-    template<class T>
-    class DIScopedService : public DISingletonService<T>
+    /// DI service interface
+    template <class T>
+    class IServiceTyped : public virtual IService
     {
     public:
-        /// Base of the @ref DIScopedService class
-        using Base = DISingletonService<T>;
-
-        /// @copydoc DISingletonService<T>::Factory
-        using Factory = typename Base::Factory;
+        /// Pointer to an instance of a service
+        using ServicePtr = typename std::shared_ptr<T>;
 
         /**
-         * @brief Constructor
-         * @param factory factory function
+         * @brief Factory function that accepts a reference to 
+         * a DI container and returns a pointer to an instance of a service
          */
-        DIScopedService(const Factory factory) : Base(factory)
-        {
-        }
-    }; // class DISingletonService
-} // sol::di::services
+        using Factory = typename std::function<ServicePtr(const Container&)>;
+
+        virtual ~IServiceTyped() = 0;
+
+        /**
+         * @brief Resolves the service
+         * @param[in] container DI container
+         * @returns pointer to a service instance
+         */
+        virtual ServicePtr GetService(const Container& container) = 0;
+    };
+
+    template <class T>
+    IServiceTyped<T>::~IServiceTyped() {}
+}

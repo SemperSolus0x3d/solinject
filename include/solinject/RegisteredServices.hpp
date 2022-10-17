@@ -30,80 +30,81 @@
 #include <typeindex>
 
 #include "solinject/Defines.hpp"
-#include "IDIService.hpp"
-#include "IDIServiceTyped.hpp"
-#include "DISingletonService.hpp"
-#include "DITransientService.hpp"
-#include "DISharedService.hpp"
-#include "DIScopedService.hpp"
+#include "IService.hpp"
+#include "IServiceTyped.hpp"
+#include "SingletonService.hpp"
+#include "TransientService.hpp"
+#include "SharedService.hpp"
+#include "ScopedService.hpp"
 #include "solinject/exceptions/ServiceNotRegisteredException.hpp"
+#include "solinject/Utils.hpp"
 
-namespace sol::di::services
+namespace sol::di::impl
 {
     /// Registered DI services collection
-    class DIRegisteredServices
+    class RegisteredServices
     {
     public:
         /**
-         * @copydoc IDIServiceTyped<T>::Factory
+         * @copydoc IServiceTyped<T>::Factory
          * @tparam T service type
          */
         template <class T>
-        using Factory = typename IDIServiceTyped<T>::Factory;
+        using Factory = typename IServiceTyped<T>::Factory;
 
         /**
-         * @copydoc IDIServiceTyped<T>::ServicePtr
+         * @copydoc IServiceTyped<T>::ServicePtr
          * @tparam T service type
          */
         template <class T>
-        using ServicePtr = typename IDIServiceTyped<T>::ServicePtr;
+        using ServicePtr = typename IServiceTyped<T>::ServicePtr;
 
-        /// Pointer to a @ref IDIService instance
-        using DIServicePtr = std::shared_ptr<IDIService>;
+        /// Pointer to a DI service instance
+        using DIServicePtr = std::shared_ptr<IService>;
 
         /// Map of registered DI services
         using RegisteredServicesMap = std::map<std::type_index, std::vector<DIServicePtr>>;
 
         /// Default constructor
-        DIRegisteredServices() {}
+        RegisteredServices() {}
 
         /**
          * @brief Constructor
          * @param services map of DI services
          */
-        DIRegisteredServices(RegisteredServicesMap&& services) :
+        RegisteredServices(RegisteredServicesMap services) :
             m_RegisteredServices(std::move(services))
         {
         }
 
         /// Copy constructor
-        DIRegisteredServices(const DIRegisteredServices& other) :
+        RegisteredServices(const RegisteredServices& other) :
             m_RegisteredServices(other.m_RegisteredServices)
         {
         }
 
         /// Move constructor
-        DIRegisteredServices(DIRegisteredServices&& other) : DIRegisteredServices()
+        RegisteredServices(RegisteredServices&& other) : RegisteredServices()
         {
             swap(*this, other);
         }
 
         /// Copy-assignment operator
-        DIRegisteredServices& operator=(DIRegisteredServices other)
+        RegisteredServices& operator=(RegisteredServices other)
         {
             swap(*this, other);
             return *this;
         }
 
         /// Move-assignment operator
-        DIRegisteredServices& operator=(DIRegisteredServices&& other)
+        RegisteredServices& operator=(RegisteredServices&& other)
         {
             swap(*this, other);
             return *this;
         }
 
-        /// Swaps two @ref DIRegisteredServices instances
-        friend void swap(DIRegisteredServices& a, DIRegisteredServices& b)
+        /// Swaps two @ref RegisteredServices instances
+        friend void swap(RegisteredServices& a, RegisteredServices& b)
         {
             using std::swap;
 
@@ -111,22 +112,18 @@ namespace sol::di::services
         }
 
         /**
-         * @brief Merges other @ref DIRegisteredServices instance
+         * @brief Merges other @ref RegisteredServices instance
          * into this instance
-         * @param other other @ref DIRegisteredServices instance
+         * @param other other @ref RegisteredServices instance
          */
-        void Merge(DIRegisteredServices&& other)
+        void Merge(RegisteredServices other)
         {
-            for (const auto& pair : other.m_RegisteredServices)
+            for (auto& pair : other.m_RegisteredServices)
             {
                 auto& source = pair.second;
                 auto& destination = m_RegisteredServices[pair.first];
 
-                destination.insert(
-                    destination.end(),
-                    std::make_move_iterator(source.begin()),
-                    std::make_move_iterator(source.end())
-                );
+                impl::ConcatenateVectors(destination, std::move(source));
             }
         }
 
@@ -136,9 +133,9 @@ namespace sol::di::services
          * @tparam T service type
          */
         template<class T>
-        void RegisterSingletonService(const Factory<T> factory)
+        void RegisterSingletonService(Factory<T> factory)
         {
-            RegisterServiceInternal<T, DISingletonService<T>>(factory);
+            RegisterServiceInternal<T, SingletonService<T>>(factory);
         }
 
         /**
@@ -149,7 +146,7 @@ namespace sol::di::services
         template<class T>
         void RegisterSingletonService(ServicePtr<T> instance)
         {
-            RegisterServiceInternal<T, DISingletonService<T>>(instance);
+            RegisterServiceInternal<T, SingletonService<T>>(instance);
         }
 
         /**
@@ -158,9 +155,9 @@ namespace sol::di::services
          * @tparam T service type
          */
         template<class T>
-        void RegisterTransientService(const Factory<T> factory)
+        void RegisterTransientService(Factory<T> factory)
         {
-            RegisterServiceInternal<T, DITransientService<T>>(factory);
+            RegisterServiceInternal<T, TransientService<T>>(factory);
         }
 
         /**
@@ -169,9 +166,21 @@ namespace sol::di::services
          * @tparam T service type
          */
         template<class T>
-        void RegisterSharedService(const Factory<T> factory)
+        void RegisterSharedService(Factory<T> factory)
         {
-            RegisterServiceInternal<T, DISharedService<T>>(factory);
+            RegisterServiceInternal<T, SharedService<T>>(factory);
+        }
+
+        /**
+         * @brief Registers a service
+         * @param type service type
+         * @param diService pointer to a DI service instance
+         * @warning This method is intended for use by the
+         * @ref ContainerBuilder class only
+         */
+        void RegisterService(std::type_index type, DIServicePtr diService)
+        {
+            RegisterServiceInternal(type, diService);
         }
 
         /**
@@ -179,10 +188,10 @@ namespace sol::di::services
          * @tparam T service type
          * @param[in] container DI container
          * @returns Pointer to an instance of the service
-         * @throws sol::di::exceptions::ServiceNotRegisteredException
+         * @throws sol::di::exc::ServiceNotRegisteredException
          */
         template<class T>
-        ServicePtr<T> GetRequiredService(const DIContainer& container) const
+        ServicePtr<T> GetRequiredService(const Container& container) const
         {
             return GetServiceInternal<T, false>(container);
         }
@@ -195,7 +204,7 @@ namespace sol::di::services
          * if the service is not registered
          */
         template <class T>
-        ServicePtr<T> GetService(const DIContainer& container) const
+        ServicePtr<T> GetService(const Container& container) const
         {
             return GetServiceInternal<T, true>(container);
         }
@@ -208,7 +217,7 @@ namespace sol::di::services
          * or empty vector if the service is not registered
          */
         template <class T>
-        std::vector<ServicePtr<T>> GetServices(const DIContainer& container) const
+        std::vector<ServicePtr<T>> GetServices(const Container& container) const
         {
             using namespace std::string_literals;
 
@@ -240,6 +249,16 @@ namespace sol::di::services
 
         /**
          * @brief Registers a service
+         * @param type service type
+         * @param diService pointer to a DI service instance
+         */
+        void RegisterServiceInternal(std::type_index type, DIServicePtr diService)
+        {
+            m_RegisteredServices[type].push_back(diService);
+        }
+
+        /**
+         * @brief Registers a service
          * @tparam TService service type
          * @tparam TDISevice DI service type
          * @param factory factory function
@@ -247,7 +266,10 @@ namespace sol::di::services
         template <class TService, class TDIService>
         void RegisterServiceInternal(Factory<TService> factory)
         {
-            m_RegisteredServices[std::type_index(typeid(TService))].push_back(std::make_shared<TDIService>(factory));
+            RegisterServiceInternal(
+                std::type_index(typeid(TService)),
+                std::make_shared<TDIService>(factory)
+            );
         }
 
         /**
@@ -272,11 +294,15 @@ namespace sol::di::services
          * @returns pointer to an instance of the service
          */
         template <class T>
-        ServicePtr<T> GetServiceInstance(const DIServicePtr& diServicePtr, const DIContainer& container) const
+        ServicePtr<T> GetServiceInstance(const DIServicePtr& diServicePtr, const Container& container) const
         {
             solinject_req_assert(diServicePtr != nullptr);
 
-            return static_cast<IDIServiceTyped<T>*>(diServicePtr.get())->GetService(container);
+            auto castedDiServicePtr = std::dynamic_pointer_cast<IServiceTyped<T>>(diServicePtr);
+
+            solinject_req_assert(castedDiServicePtr != nullptr && "The service is resolvable as T");
+
+            return castedDiServicePtr->GetService(container);
         }
 
         /**
@@ -288,7 +314,7 @@ namespace sol::di::services
          * @returns pointer to an instance of the service
          */
         template <class T, bool nothrow>
-        ServicePtr<T> GetServiceInternal(const DIContainer& container) const
+        ServicePtr<T> GetServiceInternal(const Container& container) const
         {
             using namespace std::string_literals;
 
@@ -305,7 +331,7 @@ namespace sol::di::services
                 if constexpr (nothrow)
                     return nullptr;
                 else
-                    throw exceptions::ServiceNotRegisteredException(typeid(T));
+                    throw exc::ServiceNotRegisteredException(typeid(T));
 
             auto& services = serviceIt->second;
 

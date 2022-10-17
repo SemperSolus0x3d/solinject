@@ -31,64 +31,67 @@
 #include <mutex>
 
 #include "Defines.hpp"
-#include "services/IDIService.hpp"
-#include "services/IDIServiceTyped.hpp"
-#include "services/DIRegisteredServices.hpp"
-#include "services/DIScopedServiceBuilders.hpp"
+#include "IService.hpp"
+#include "IServiceTyped.hpp"
+#include "RegisteredServices.hpp"
+#include "ScopedServiceBuilders.hpp"
 #include "Utils.hpp"
 
 namespace sol::di
 {
-    namespace services
-    {
-        class IDIService;
-    }
+    namespace impl { class IService; }
 
     /**
      * @brief Dependency Injection container
-     * @headerfile DIContainer.hpp solinject.hpp
+     * @headerfile Container.hpp solinject.hpp
      */
-    class DIContainer
+    class Container
     {
     public:
         /**
-         * @copydoc services::IDIServiceTyped<T>::Factory
+         * @copydoc impl::IServiceTyped<T>::Factory
          * @tparam T the service type
          */
         template <class T>
-        using Factory = typename services::IDIServiceTyped<T>::Factory;
+        using Factory = typename impl::IServiceTyped<T>::Factory;
 
         /**
-         * @copydoc services::IDIServiceTyped<T>::ServicePtr
+         * @copydoc impl::IServiceTyped<T>::ServicePtr
          * @tparam T service type
          */
         template <class T>
-        using ServicePtr = typename services::IDIServiceTyped<T>::ServicePtr;
+        using ServicePtr = typename impl::IServiceTyped<T>::ServicePtr;
+
+        /// @copydoc impl::RegisteredServices::DIServicePtr
+        using DIServicePtr = impl::RegisteredServices::DIServicePtr;
+
+        /// @copydoc impl::ScopedServiceBuilders::ScopedServiceBuilderPtr
+        using ScopedServiceBuilderPtr = impl::ScopedServiceBuilders::ScopedServiceBuilderPtr;
 
         /// Default constructor
-        DIContainer() : m_Mutex(std::make_shared<Mutex>()) {}
+        Container() : m_Mutex(std::make_shared<Mutex>()) {}
 
         /// Copy constructor (deleted)
-        DIContainer(const DIContainer& other) = delete;
+        Container(const Container& other) = delete;
 
         /// Move constructor
-        DIContainer(DIContainer&& other) noexcept : DIContainer()
+        Container(Container&& other) noexcept : Container()
         {
             swap(*this, other);
         }
 
         /// Copy-assignment operator (deleted)
-        DIContainer& operator=(const DIContainer& other) = delete;
+        Container& operator=(const Container& other) = delete;
 
         /// Move-assignment operator
-        DIContainer& operator=(DIContainer&& other) noexcept
+        Container& operator=(Container&& other) noexcept
         {
             swap(*this, other);
             return *this;
         }
 
-        /// Swaps two @ref DIContainer instances
-        friend void swap(DIContainer& a, DIContainer& b) noexcept
+        /// Swaps two @ref Container instances
+        friend void swap(Container& a, Container& b) noexcept
         {
             using std::swap;
 
@@ -105,18 +108,18 @@ namespace sol::di
         /**
          * @brief Creates a scoped container
          * from the current container
-         * @returns Scoped @ref DIContainer instance
+         * @returns Scoped @ref Container instance
          */
-        DIContainer CreateScope() const
+        Container CreateScope() const
         {
-            using namespace services;
+            using namespace impl;
 
             auto lock = LockMutex();
 
-            DIRegisteredServices diServices = m_RegisteredServices;
+            RegisteredServices diServices = m_RegisteredServices;
             diServices.Merge(m_ScopedServiceBuilders.BuildDIServices());
 
-            return DIContainer(std::move(diServices), m_Mutex);
+            return Container(std::move(diServices), m_Mutex);
         }
 
         /**
@@ -133,7 +136,7 @@ namespace sol::di
          * @param factory factory function
          */
         template<class T>
-        void RegisterSingletonService(const Factory<T> factory)
+        void RegisterSingletonService(Factory<T> factory)
         {
             auto lock = LockMutex();
             m_RegisteredServices.template RegisterSingletonService<T>(factory);
@@ -162,7 +165,7 @@ namespace sol::di
          * @param factory factory function
          */
         template<class T>
-        void RegisterTransientService(const Factory<T> factory)
+        void RegisterTransientService(Factory<T> factory)
         {
             auto lock = LockMutex();
             m_RegisteredServices.template RegisterTransientService<T>(factory);
@@ -174,7 +177,7 @@ namespace sol::di
          * @param factory factory function
          */
         template<class T>
-        void RegisterSharedService(const Factory<T> factory)
+        void RegisterSharedService(Factory<T> factory)
         {
             auto lock = LockMutex();
             m_RegisteredServices.template RegisterSharedService<T>(factory);
@@ -186,17 +189,41 @@ namespace sol::di
          * @param factory factory function
          */
         template<class T>
-        void RegisterScopedService(const Factory<T> factory)
+        void RegisterScopedService(Factory<T> factory)
         {
             auto lock = LockMutex();
             m_ScopedServiceBuilders.template RegisterScopedService<T>(factory);
         }
 
         /**
+         * @brief Registers a service
+         * @param type service type
+         * @param diService pointer to a DI service instance
+         * @warning This method is intended for use by the
+         * @ref ContainerBuilder class only
+         */
+        void RegisterService(std::type_index type, DIServicePtr diService)
+        {
+            m_RegisteredServices.RegisterService(type, diService);
+        }
+
+        /**
+         * @brief Registers a scoped service builder
+         * @param type service type
+         * @param serviceBuilder service builder
+         * @warning This method is intended for use by the
+         * @ref ContainerBuilder class only
+         */
+        void RegisterScopedServiceBuilder(std::type_index type, ScopedServiceBuilderPtr serviceBuilder)
+        {
+            m_ScopedServiceBuilders.RegisterScopedService(type, serviceBuilder);
+        }
+
+        /**
          * @brief Resolves a required service
          * @tparam T service type
          * @returns Pointer to an instance of the service
-         * @throws sol::di::exceptions::ServiceNotRegisteredException
+         * @throws sol::di::exc::ServiceNotRegisteredException
          */
         template<class T>
         ServicePtr<T> GetRequiredService() const
@@ -237,9 +264,9 @@ namespace sol::di
             using Lock = std::lock_guard<Mutex>;
             using ScopedLock = std::scoped_lock<Mutex, Mutex>;
         #else
-            using Mutex = utils::Empty;
-            using Lock = utils::Empty;
-            using ScopedLock = utils::Empty;
+            using Mutex = impl::Empty;
+            using Lock = impl::Empty;
+            using ScopedLock = impl::Empty;
         #endif
 
         using MutexPtr = std::shared_ptr<Mutex>;
@@ -249,8 +276,8 @@ namespace sol::di
          * @param services registered services
          * @param mutexPtr pointer to a mutex
          */
-        DIContainer(
-            services::DIRegisteredServices&& services,
+        Container(
+            impl::RegisteredServices&& services,
             MutexPtr mutexPtr
         ) :
             m_RegisteredServices(std::move(services)),
@@ -261,10 +288,10 @@ namespace sol::di
         }
 
         /// Registered services
-        services::DIRegisteredServices m_RegisteredServices;
+        impl::RegisteredServices m_RegisteredServices;
 
         /// Scoped service builders
-        services::DIScopedServiceBuilders m_ScopedServiceBuilders;
+        impl::ScopedServiceBuilders m_ScopedServiceBuilders;
 
         /// Pointer to a mutex
         MutexPtr m_Mutex;
@@ -283,5 +310,5 @@ namespace sol::di
         {
             return Lock(*m_Mutex);
         }
-    }; // class DIContainer
+    }; // class Container
 } // sol::di

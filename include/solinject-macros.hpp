@@ -25,4 +25,4 @@
 
 #pragma once
 
-#include "solinject/DIMacros.hpp"
+#include "solinject/Macros.hpp"

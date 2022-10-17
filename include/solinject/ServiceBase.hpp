@@ -22,38 +22,38 @@
 
 #pragma once
 #include "solinject/Defines.hpp"
-#include "IDIServiceTyped.hpp"
+#include "IServiceTyped.hpp"
 #include "solinject/exceptions/CircularDependencyException.hpp"
 
-namespace sol::di::services
+namespace sol::di::impl
 {
     /** 
      * @brief Base for the DI service classes
      * @tparam T service type
      */
     template <class T>
-    class DIServiceBase : public IDIServiceTyped<T>
+    class ServiceBase : public IServiceTyped<T>
     {
     public:
-        /// Base of the @ref DIServiceBase class
-        using Base = IDIServiceTyped<T>;
+        /// Base of the ServiceBase class
+        using Base = IServiceTyped<T>;
 
-        /// @copydoc IDIServiceTyped<T>::ServicePtr
+        /// @copydoc sol::di::impl::IServiceTyped<T>::ServicePtr
         using ServicePtr = typename Base::ServicePtr;
 
-        /// @copydoc IDIServiceTyped<T>::Factory
+        /// @copydoc sol::di::impl::IServiceTyped<T>::Factory
         using Factory = typename Base::Factory;
 
-        /// @copydoc IDIServiceTyped<T>::Container
+        /// @copydoc sol::di::impl::IService::Container
         using Container = typename Base::Container;
 
-        virtual ~DIServiceBase() = 0;
+        virtual ~ServiceBase() = 0;
 
         /**
          * @brief Resolves the service and checks for circular dependencies
          * @param[in] container DI container
          * @returns pointer to a service instance
-         * @throws sol::di::exceptions::CircularDependencyException
+         * @throws sol::di::exc::CircularDependencyException
          */
         virtual ServicePtr GetService(const Container& container)
         {
@@ -62,16 +62,16 @@ namespace sol::di::services
             if (m_IsLocked)
             {
                 m_IsLocked = false;
-                throw exceptions::CircularDependencyException(typeid(T));
+                throw exc::CircularDependencyException(typeid(T));
             }
 
             m_IsLocked = true;
-            auto service = GetServiceInternal(container);
+            auto service = this->GetServiceAsVoidPtr(container);
             m_IsLocked = false;
 
             solinject_req_assert(service != nullptr);
 
-            return service;
+            return std::static_pointer_cast<T>(service);
         }
 
     protected:
@@ -84,11 +84,8 @@ namespace sol::di::services
          * that we have detected a circular dependency.
          */
         bool m_IsLocked = false;
-
-        /// @copydoc IDIServiceTyped<T>::GetService
-        virtual ServicePtr GetServiceInternal(const Container& container) = 0;
     };
 
     template <class T>
-    DIServiceBase<T>::~DIServiceBase() {}
+    ServiceBase<T>::~ServiceBase() {}
 }

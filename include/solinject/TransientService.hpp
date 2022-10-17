@@ -21,51 +21,61 @@
 /// @file
 
 #pragma once
+#include <type_traits>
 #include "solinject/Defines.hpp"
-#include "DIServiceBase.hpp"
+#include "ServiceBase.hpp"
 
-namespace sol::di::services
+namespace sol::di::impl
 {
     /**
      * @brief Transient DI service
      * @tparam T service type
      */
-    template<class T>
-    class DITransientService : public DIServiceBase<T>
+    template<class TService, class...TServiceParents>
+    class TransientService :
+        public ServiceBase<TService>,
+        public ServiceBase<TServiceParents>...
     {
+        static_assert(
+            std::conjunction_v<std::is_base_of<TServiceParents, TService>...>,
+            "The TServiceParents types must be derived from the TService type"
+        );
     public:
-        /// Base of the @ref DITransientService class
-        using Base = DIServiceBase<T>;
+        /// Base of the @ref TransientService class
+        using Base = ServiceBase<TService>;
 
-        /// @copydoc DIServiceBase<T>::Container
+        /// @copydoc ServiceBase<TService>::Container
         using Container = typename Base::Container;
 
-        /// @copydoc DIServiceBase<T>::ServicePtr
+        /// @copydoc ServiceBase<TService>::ServicePtr
         using ServicePtr = typename Base::ServicePtr;
 
-        /// @copydoc DIServiceBase<T>::Factory
+        /// @copydoc ServiceBase<TService>::Factory
         using Factory = typename Base::Factory;
+
+        /// @copydoc sol::di::impl::IService::VoidPtr
+        using VoidPtr = typename IService::VoidPtr;
 
         /**
          * @brief Constructor
          * @param factory factory function
          */
-        DITransientService(const Factory factory) : m_Factory(factory)
+        TransientService(Factory factory) : m_Factory(factory)
         {
         }
 
     protected:
-        ServicePtr GetServiceInternal(const Container& container) override
+        virtual VoidPtr GetServiceAsVoidPtr(const Container& container) override
         {
             auto service = m_Factory(container);
 
             solinject_req_assert(service != nullptr && "Factory should never return nullptr");
 
-            return service;
+            return std::static_pointer_cast<void>(service);
         }
 
     private:
         /// Factory function
         Factory m_Factory;
-    }; // class DITransientService
-} // sol::di::services
+    }; // class TransientService
+} // sol::di::impl

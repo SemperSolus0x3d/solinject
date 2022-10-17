@@ -21,35 +21,39 @@
 /// @file
 
 #pragma once
-#include "IDIScopedServiceBuilder.hpp"
+#include "IScopedServiceBuilder.hpp"
 
-namespace sol::di::services
+namespace sol::di::impl
 {
     /**
      * @brief Builder for scoped DI services
      * @tparam T service type
      */
-    template<class T>
-    class DIScopedServiceBuilder : public IDIScopedServiceBuilder
+    template<class TService, class...TServiceParents>
+    class ScopedServiceBuilder : public IScopedServiceBuilder
     {
+        static_assert(
+            std::conjunction_v<std::is_base_of<TServiceParents, TService>...>,
+            "The TServiceParents types must be derived from the TService type"
+        );
     public:
-        /// Base for the @ref DIScopedServiceBuilder class
-        using Base = IDIScopedServiceBuilder;
+        /// Base for the @ref ScopedServiceBuilder class
+        using Base = IScopedServiceBuilder;
 
         /// Type of the DI service that is being built
-        using DIService = DIScopedService<T>;
+        using DIService = ScopedService<TService, TServiceParents...>;
         
-        /// @copydoc IDIScopedServiceBuilder::DIServicePtr
+        /// @copydoc IScopedServiceBuilder::DIServicePtr
         using AbstractDIServicePtr = typename Base::DIServicePtr;
 
-        /// @copydoc DIScopedService<T>::Factory
+        /// @copydoc ScopedService<TService>::Factory
         using Factory = typename DIService::Factory;
 
         /**
          * @brief Constructor
          * @param factory factory function
          */
-        DIScopedServiceBuilder(Factory factory) : m_Factory(factory)
+        ScopedServiceBuilder(Factory factory) : m_Factory(factory)
         {
         }
 

@@ -22,35 +22,44 @@
 
 #pragma once
 #include "solinject/Defines.hpp"
-#include "DIServiceBase.hpp"
+#include "ServiceBase.hpp"
 
-namespace sol::di::services
+namespace sol::di::impl
 {
     /**
      * @brief Singleton DI service
      * @tparam T service type
      */
-    template<class T>
-    class DISingletonService : public DIServiceBase<T>
+    template<class TService, class...TServiceParents>
+    class SingletonService : 
+        public ServiceBase<TService>,
+        public ServiceBase<TServiceParents>...
     {
+        static_assert(
+            std::conjunction_v<std::is_base_of<TServiceParents, TService>...>,
+            "The TServiceParents types must be derived from the TService type"
+        );
     public:
-        /// Base of the @ref DISingletonService class
-        using Base = DIServiceBase<T>;
+        /// Base of the @ref SingletonService class
+        using Base = ServiceBase<TService>;
 
-        /// @copydoc DIServiceBase<T>::Container
+        /// @copydoc sol::di::impl::ServiceBase<T>::Container
         using Container = typename Base::Container;
 
-        /// @copydoc DIServiceBase<T>::ServicePtr
+        /// @copydoc sol::di::impl::ServiceBase<T>::ServicePtr
         using ServicePtr = typename Base::ServicePtr;
 
-        /// @copydoc DIServiceBase<T>::Factory
+        /// @copydoc sol::di::impl::ServiceBase<T>::Factory
         using Factory = typename Base::Factory;
+
+        /// @copydoc sol::di::impl::IService::VoidPtr
+        using VoidPtr = typename IService::VoidPtr;
 
         /**
          * @brief Constructor
          * @param service pointer to a service instance
          */
-        DISingletonService(ServicePtr service) : m_ServicePtr(service)
+        SingletonService(ServicePtr service) : m_ServicePtr(service)
         {
         }
 
@@ -58,14 +67,15 @@ namespace sol::di::services
          * @brief Constructor
          * @param factory factory function
          */
-        DISingletonService(const Factory factory) : m_Factory(factory), m_ServicePtr(nullptr)
+        SingletonService(Factory factory) : m_Factory(factory), m_ServicePtr(nullptr)
         {
         }
 
-        virtual ~DISingletonService() {}
+        virtual ~SingletonService() {}
 
     protected:
-        ServicePtr GetServiceInternal(const Container& container) override
+        /// @copydoc sol::di::impl::IService::GetServiceAsVoidPtr
+        virtual VoidPtr GetServiceAsVoidPtr(const Container& container) override
         {
             if (m_ServicePtr == nullptr)
             {
@@ -73,7 +83,7 @@ namespace sol::di::services
                 solinject_req_assert(m_ServicePtr != nullptr && "Factory should never return nullptr");
             }
 
-            return m_ServicePtr;
+            return std::static_pointer_cast<void>(m_ServicePtr);
         }
 
     private:
@@ -82,5 +92,5 @@ namespace sol::di::services
 
         /// Factory function
         Factory m_Factory;
-    }; // class DISingletonService
-} // sol::di::services
+    }; // class SingletonService
+} // sol::di::impl

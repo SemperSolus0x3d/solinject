@@ -22,49 +22,58 @@
 
 #pragma once
 #include "solinject/Defines.hpp"
-#include "DIServiceBase.hpp"
+#include "ServiceBase.hpp"
 
-namespace sol::di::services
+namespace sol::di::impl
 {
     /**
      * @brief Shared DI service
      * @tparam T service type
      */
-    template<class T>
-    class DISharedService : public DIServiceBase<T>
+    template<class TService, class...TServiceParents>
+    class SharedService :
+        public ServiceBase<TService>,
+        public ServiceBase<TServiceParents>...
     {
+        static_assert(
+            std::conjunction_v<std::is_base_of<TServiceParents, TService>...>,
+            "The TServiceParents types must be derived from the TService type"
+        );
     public:
-        /// Base of the @ref DISharedService class
-        using Base = DIServiceBase<T>;
+        /// Base of the @ref SharedService class
+        using Base = ServiceBase<TService>;
 
-        /// @copydoc DIServiceBase<T>::Container
+        /// @copydoc ServiceBase<TService>::Container
         using Container = typename Base::Container;
 
-        /// @copydoc DIServiceBase<T>::ServicePtr
+        /// @copydoc ServiceBase<TService>::ServicePtr
         using ServicePtr = typename Base::ServicePtr;
 
-        /// @copydoc DIServiceBase<T>::Factory
+        /// @copydoc ServiceBase<TService>::Factory
         using Factory = typename Base::Factory;
 
         /// @ref std::weak_ptr to a service instance
-        using ServiceWeakPtr = std::weak_ptr<T>;
+        using ServiceWeakPtr = std::weak_ptr<TService>;
+
+        /// @copydoc sol::di::impl::IService::VoidPtr
+        using VoidPtr = typename IService::VoidPtr;
 
         /**
          * @brief Constructor
          * @param factory the factory function
          */
-        DISharedService(const Factory factory) : m_Factory(factory), m_ServicePtr()
+        SharedService(Factory factory) : m_Factory(factory), m_ServicePtr()
         {
         }
 
     protected:
-        ServicePtr GetServiceInternal(const Container& container) override
+        virtual VoidPtr GetServiceAsVoidPtr(const Container& container) override
         {
             ServicePtr instancePtr = m_ServicePtr.lock();
 
             if (instancePtr != nullptr)
             {
-                return instancePtr;
+                return std::static_pointer_cast<void>(instancePtr);
             }
             else
             {
@@ -73,7 +82,7 @@ namespace sol::di::services
                 solinject_req_assert(newInstancePtr != nullptr && "Factory should never return nullptr");
 
                 m_ServicePtr = ServiceWeakPtr(newInstancePtr);
-                return newInstancePtr;
+                return std::static_pointer_cast<void>(newInstancePtr);
             }
         }
 
@@ -83,5 +92,5 @@ namespace sol::di::services
 
         /// Factory function
         Factory m_Factory;
-    }; // class DISharedService
-} // sol::di::services
+    }; // class SharedService
+} // sol::di::impl

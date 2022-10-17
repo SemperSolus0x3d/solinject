@@ -20,9 +20,24 @@
 
 /** @file
  * @brief Header file, which provides the
- * @ref sol::di::DIContainer class
+ * container itself and some other classes
+ *
+ * This header file provides the following classes:
+ * - @ref sol::di::Container
+ * - @ref sol::di::ContainerBuilder
+ * - @ref sol::di::Configuration
+ * - @ref sol::di::ConfigurationParser
+ *
+ * And the following exception classes:
+ * - @ref sol::di::exc::DIException
+ * - @ref sol::di::exc::CircularDependencyException
+ * - @ref sol::di::exc::ServiceNotRegisteredException
  */
 
 #pragma once
 
-#include "solinject/DIContainer.hpp"
+#include "solinject/Container.hpp"
+#include "solinject/Configuration.hpp"
+#include "solinject/ConfigurationParser.hpp"
+#include "solinject/ContainerBuilder.hpp"
+#include "solinject/Shortcuts.hpp"
