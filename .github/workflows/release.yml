@@ -88,7 +88,7 @@ jobs:
 
     - name: Build Asset
       working-directory: ${{github.workspace}}
-      run: scripts/BuildForAllPlatformsUnixMakefiles.py
+      run: python3 scripts/BuildForAllPlatformsUnixMakefiles.py
 
     - name: Compress files
       uses: vimtor/action-zip@v1
