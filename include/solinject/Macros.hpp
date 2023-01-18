@@ -116,7 +116,7 @@
  * @see FROM_DI_MULTIPLE
  */
 #define RegisterSingletonService(container, class_, ...) \
-    (container).template RegisterSingletonService<class_>(FACTORY(class_, __VA_ARGS__))
+    (container).template RegisterSingletonService<class_>(FACTORY(class_, ## __VA_ARGS__))
 
 /**
  * @brief Registers a service with singleton lifetime
@@ -134,7 +134,7 @@
  * @see FROM_DI_MULTIPLE
  */
 #define RegisterSingletonInterface(container, interface_, implementation, ...) \
-    (container).template RegisterSingletonService<interface_>(FACTORY(implementation, __VA_ARGS__))
+    (container).template RegisterSingletonService<interface_>(FACTORY(implementation, ## __VA_ARGS__))
 
 /**
  * @brief Registers a service with transient lifetime
@@ -150,7 +150,7 @@
  * @see FROM_DI_MULTIPLE
  */
 #define RegisterTransientService(container, class_, ...) \
-    (container).template RegisterTransientService<class_>(FACTORY(class_, __VA_ARGS__))
+    (container).template RegisterTransientService<class_>(FACTORY(class_, ## __VA_ARGS__))
 
 /**
  * @brief Registers a service with transient lifetime
@@ -168,7 +168,7 @@
  * @see FROM_DI_MULTIPLE
  */
 #define RegisterTransientInterface(container, interface_, implementation, ...) \
-    (container).template RegisterTransientService<interface_>(FACTORY(implementation, __VA_ARGS__))
+    (container).template RegisterTransientService<interface_>(FACTORY(implementation, ## __VA_ARGS__))
 
 /**
  * @brief Registers a service with shared lifetime
@@ -187,7 +187,7 @@
  * @see FROM_DI_MULTIPLE
  */
 #define RegisterSharedService(container, class_, ...) \
-    (container).template RegisterSharedService<class_>(FACTORY(class_, __VA_ARGS__))
+    (container).template RegisterSharedService<class_>(FACTORY(class_, ## __VA_ARGS__))
 
 /**
  * @brief Registers a service with shared lifetime
@@ -208,7 +208,7 @@
  * @see FROM_DI_MULTIPLE
  */
 #define RegisterSharedInterface(container, interface_, implementation, ...) \
-    (container).template RegisterSharedService<interface_>(FACTORY(implementation, __VA_ARGS__))
+    (container).template RegisterSharedService<interface_>(FACTORY(implementation, ## __VA_ARGS__))
 
 /**
  * @brief Registers a service with scoped lifetime
@@ -224,7 +224,7 @@
  * @see FROM_DI_MULTIPLE
  */
 #define RegisterScopedService(container, class_, ...) \
-    (container).template RegisterScopedService<class_>(FACTORY(class_, __VA_ARGS__))
+    (container).template RegisterScopedService<class_>(FACTORY(class_, ## __VA_ARGS__))
 
 /**
  * @brief Registers a service with scoped lifetime
@@ -242,4 +242,4 @@
  * @see FROM_DI_MULTIPLE
  */
 #define RegisterScopedInterface(container, interface_, implementation, ...) \
-    (container).template RegisterScopedService<interface_>(FACTORY(implementation, __VA_ARGS__))
+    (container).template RegisterScopedService<interface_>(FACTORY(implementation, ## __VA_ARGS__))
